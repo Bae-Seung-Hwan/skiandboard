@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<section class="container">
+  <h1>게시판</h1>
+
+  <!-- 툴바에 클래스 -->
+  <form method="get" class="toolbar">
+    <select name="category">
+      <option th:selected="${category == null}" value="">전체</option>
+      <option th:each="c : ${T(com.springboot.domain.BoardCategory).values()}"
+              th:value="${c}" th:text="${c}"
+              th:selected="${c == category}"></option>
+    </select>
+
+    <input type="text" name="q" placeholder="검색" th:value="${q}">
+    <select name="sort">
+      <option value="createdAt,desc" th:selected="${sort == 'createdAt,desc'}">최신순</option>
+      <option value="views" th:selected="${sort == 'views'}">조회수순</option>
+    </select>
+
+    <button type="submit" class="btn">적용</button>
+    <a th:href="@{/board/new}" class="btn">글쓰기</a>
+  </form>
+
+  <!-- 리스트에 클래스 + 빈 상태 처리 -->
+  <ul class="post-list">
+    <li class="post-empty" th:if="${posts.totalElements == 0}">아직 글이 없습니다. 첫 글을 써보세요!</li>
+
+    <li th:each="p : ${posts.content}">
+      <a th:href="@{'/board/' + ${p.id}}">
+        <div>
+          <div class="post-title" th:text="${p.title}">제목</div>
+          <div class="post-meta">
+            <span th:text="${p.authorName}">작성자</span>
+            <span th:text="${p.category}">FREE</span>
+            <span th:text="${#temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</span>
+          </div>
+        </div>
+        <div class="post-meta">조회 <b th:text="${p.viewCount}">0</b></div>
+      </a>
+    </li>
+  </ul>
+
+  <nav class="pagination">
+    <a th:if="${posts.hasPrevious()}" th:href="@{|/board?page=${posts.number-1}&category=${category}&q=${q}&sort=${sort}|}">이전</a>
+    <span th:text="${posts.number+1}"></span>/<span th:text="${posts.totalPages}"></span>
+    <a th:if="${posts.hasNext()}" th:href="@{|/board?page=${posts.number+1}&category=${category}&q=${q}&sort=${sort}|}">다음</a>
+  </nav>
+</section>
+
+</body>
+</html>

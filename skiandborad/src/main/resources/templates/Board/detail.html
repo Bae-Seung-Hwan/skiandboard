@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<section class="container">
+  <a th:href="@{/board}">← 목록</a>
+  <h1 th:text="${post.title}">제목</h1>
+
+
+  <div class="meta">
+    <span th:text="${post.authorName}"></span> ·
+    <span th:text="${post.category}"></span> ·
+    <span th:text="${#temporals.format(post.createdAt,'yyyy-MM-dd HH:mm')}"></span> ·
+    <span>조회 <b th:text="${post.viewCount}"></b></span>
+  </div>
+
+  <article class="content"
+           th:utext="${#strings.replace(post.content, '\n', '<br/>')}"></article>
+
+  <div class="actions">
+    <a th:href="@{'/board/' + ${post.id} + '/edit'}">수정</a>
+    <form th:action="@{'/board/' + ${post.id} + '/delete'}" method="post" style="display:inline">
+      <button type="submit" onclick="return confirm('삭제할까요?')">삭제</button>
+    </form>
+  </div>
+
+  <hr/>
+  <h3>댓글</h3>
+  <ul>
+    <li th:each="c : ${post.comments}">
+      <b th:text="${c.authorName}">익명</b>
+      <small th:text="${#temporals.format(c.createdAt,'yyyy-MM-dd HH:mm')}"></small>
+      <p th:text="${c.content}"></p>
+    </li>
+  </ul>
+
+  <form th:action="@{'/board/' + ${post.id} + '/comments'}" method="post" th:object="${commentForm}">
+    <textarea th:field="*{content}" rows="3" placeholder="댓글을 입력하세요"></textarea>
+    <button type="submit">등록</button>
+  </form>
+</section>
+</body>
+</html>
+

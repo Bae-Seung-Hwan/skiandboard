@@ -1,0 +1,71 @@
+<!-- 추천 스키장 탭 위젯 -->
+<section class="sb-card recommend-widget" th:fragment="recommendTab">
+  <div class="tabs">
+    <button class="tab active" data-tab="list">추천</button>
+    <button class="tab" data-tab="filters">필터</button>
+  </div>
+
+  <!-- 추천 리스트 -->
+  <div class="tab-panel active" id="rec-list">
+    <div class="hint">내 위치 기준으로 가까우면서 날씨/혼잡도 좋은 순으로 추천해요.</div>
+    <div id="rec-items" class="rec-items"></div>
+  </div>
+
+  <!-- 필터 -->
+  <div class="tab-panel" id="rec-filters">
+    <div class="field">
+      <label>숙련도</label>
+      <select id="rec-skill">
+        <option value="BEGINNER">초급</option>
+        <option value="INTERMEDIATE" selected>중급</option>
+        <option value="ADVANCED">고급</option>
+        <option value="EXPERT">숙련</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>장비</label>
+      <select id="rec-gear">
+        <option value="BOTH" selected>둘 다</option>
+        <option value="SKI">스키</option>
+        <option value="SNOWBOARD">보드</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>지역</label>
+      <select id="rec-region">
+        <option value="ANY" selected>전체</option>
+        <option value="SEOUL_GYEONGGI">수도권</option>
+        <option value="GANGWON">강원</option>
+        <option value="CHUNGCHEONG">충청</option>
+        <option value="JEOLLA">전라</option>
+        <option value="GYEONGSANG">경상</option>
+        <option value="JEJU">제주</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>이동 수단</label>
+      <select id="rec-transport">
+        <option value="CAR" selected>자차</option>
+        <option value="PUBLIC">대중교통</option>
+        <option value="SHUTTLE">셔틀</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>최대 거리 (km)</label>
+      <input id="rec-maxdist" type="number" min="10" max="400" step="10" placeholder="예: 150" />
+    </div>
+
+    <div class="geo">
+      <button id="rec-use-geo" type="button">📍 내 위치 사용</button>
+      <small id="rec-geo-status"></small>
+    </div>
+
+    <div class="actions">
+      <button id="rec-apply" type="button">적용하기</button>
+    </div>
+  </div>
+</section>

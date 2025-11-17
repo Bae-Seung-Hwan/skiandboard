@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<!-- body 태그 제거 ✅ -->
+<nav th:fragment="nav" class="topbar">
+  <div class="topbar__left">
+    <a class="brand" th:href="@{/}">
+      <!-- 컨텍스트 경로 자동 포함: src="@{/img/...}" ✅ -->
+      <img th:src="@{/img/logo-sab.svg}" alt="SAB" class="brand__logo"/>
+      <span class="brand__text">Ski&Board</span>
+    </a>
+
+    <div class="tabs">
+      <a class="tab is-active" href="#" onclick="showDomestic(); return false;">국내</a>
+      <a class="tab" href="#" onclick="showOverseas(); return false;">해외</a>
+	  <a class="tab" th:href="@{/recommend}">스키장 추천</a>
+      <a class="tab" th:href="@{/board}">게시판</a>
+    </div>
+  </div>
+
+  <div class="topbar__right">
+    <span sec:authorize="isAnonymous()">
+      <a th:href="@{/login}">로그인</a>
+      <a th:href="@{/signup}" class="btn">회원가입</a>
+    </span>
+
+    <span sec:authorize="isAuthenticated()">
+      <strong><span sec:authentication="principal.displayName"></span></strong>
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit" class="btn" style="margin-left:8px;">로그아웃</button>
+      </form>
+    </span>
+  </div>
+</nav>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<section class="container" style="max-width:520px;">
+  <h1>로그인</h1>
+
+  <div th:if="${error}" class="alert" style="color:#b00020;margin:8px 0;" th:text="${error}"></div>
+  <div th:if="${logout}" class="alert" style="color:#2e7d32;margin:8px 0;" th:text="${logout}"></div>
+
+  <form th:action="@{/login}" method="post" class="login-form" style="display:grid;gap:12px;">
+    <label>
+      아이디
+      <input type="text" name="username" required
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+
+    <label>
+      비밀번호
+      <input type="password" name="password" required
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+
+    <!-- CSRF 토큰 -->
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+    <button type="submit" class="btn" style="border-color:#6b46c1;color:#6b46c1;border-radius:8px;">로그인</button>
+  </form>
+
+  <p style="margin-top:10px;font-size:14px;color:#666;">
+    테스트 계정: <code>test / password</code> (있다면)
+  </p>
+</section>
+</body>
+</html>

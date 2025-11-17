@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<div class="divider"></div>
+
+<section class="mast">
+  <h1>오늘의 스키장</h1>
+  <p class="sub">가까운 스키장과 추천 코스를 한 눈에.</p>
+</section>
+
+<section class="map-layout">
+  <div id="map" style="height: 800px;"></div>
+
+  <aside class="side">
+    <h3>국내 스키장</h3>
+    <ul id="resortList" class="resort-list">
+      <li th:each="r : ${resorts}" th:attr="data-id=${r.id}" th:attrappend="data-lat=${r.lat},data-lng=${r.lng}">
+        <a th:href="@{'/resorts/' + ${r.id}}">
+          <strong th:text="${r.name}">리조트명</strong>
+          <div class="desc" th:text="${r.description}">설명</div>
+        </a>
+      </li>
+      <li th:if="${#lists.isEmpty(resorts)}" class="empty">등록된 스키장이 아직 없어요.</li>
+    </ul>
+  </aside>
+</section>
+
+<footer class="footer">© Ski&Board</footer>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+  const resorts = /*[[${resorts}]]*/ [];
+/*]]>*/
+</script>
+
+<script>
+  // 기본 지도 설정
+  const map = L.map('map').setView([36.5, 127.8], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+  const skiLayer = L.layerGroup().addTo(map);
+  const skiIcon = L.icon({
+    iconUrl: '/img/icon-ski.png',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -24]
+  });
+
+  const markerById = new Map();
+  let activeHighlight = null;
+
+  //  서버에서 내려준 resorts를 바로 마커로 표시
+  if (resorts && resorts.length) {
+    const bounds = [];
+    resorts.forEach(r => {
+      if (!r.lat || !r.lng) return;
+      const marker = L.marker([r.lat, r.lng], { icon: skiIcon })
+        .addTo(skiLayer)
+        .bindPopup(`<b>${r.name}</b><br>${r.description ?? ''}`);
+      markerById.set(String(r.id), marker);
+      bounds.push([r.lat, r.lng]);
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [20, 20] });
+  }
+
+  // 🎯 리스트 hover 이벤트
+  const listEl = document.getElementById('resortList');
+  listEl?.addEventListener('mouseover', e => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+
+    const id = li.dataset.id;
+    const marker = markerById.get(String(id));
+    if (!marker) return;
+
+    const pos = marker.getLatLng();
+
+    if (activeHighlight) {
+      map.removeLayer(activeHighlight);
+      activeHighlight = null;
+    }
+
+    map.flyTo(pos, 11, { animate: true, duration: 0.6 });
+    marker.openPopup();
+
+    activeHighlight = L.circle(pos, {
+      radius: 800,
+      color: '#2563eb',
+      weight: 2,
+      fillOpacity: 0.15
+    }).addTo(map);
+
+    li.classList.add('is-hover');
+  });
+
+  listEl?.addEventListener('mouseout', e => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+
+    const id = li.dataset.id;
+    const marker = markerById.get(String(id));
+    if (marker) marker.closePopup();
+
+    if (activeHighlight) {
+      map.removeLayer(activeHighlight);
+      activeHighlight = null;
+    }
+
+    li.classList.remove('is-hover');
+  });
+</script>
+
+<style>
+  .resort-list li {
+    padding: 8px 10px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+  .resort-list li.is-hover { background: #f3f4f6; }
+  .resort-list a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+</style>
+</body>
+</html>
+

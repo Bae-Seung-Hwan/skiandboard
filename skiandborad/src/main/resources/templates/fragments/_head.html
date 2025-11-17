@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <!-- ✅ 제목은 th:text로 -->
+  <title th:text="${title} ?: 'Ski & Board'">Ski & Board</title>
+  <meta name="ctx" th:content="@{/}" />
+
+
+  <!-- ✅ 컨텍스트경로 자동 포함 -->
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+</html>

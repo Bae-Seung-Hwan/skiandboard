@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<main class="container" style="max-width:1120px">
+  <section class="mast">
+    <h1>스키장 추천</h1>
+    <p class="sub">내 위치와 조건을 바탕으로 오늘 갈만한 스키장을 찾아드려요.</p>
+  </section>
+
+  <!-- 추천 위젯 (탭+필터+리스트) -->
+  <meta name="ctx" th:content="@{/}" /> <!-- _head.html에 있어도 됨 -->
+  <section th:replace="~{fragments/_recommend_tab :: recommendTab}"></section>
+  <script th:src="@{/js/recommend.js}"></script>
+</main>
+
+<!-- 스크립트 -->
+<script th:src="@{/js/recommend.js}"></script>
+</body>
+</html>

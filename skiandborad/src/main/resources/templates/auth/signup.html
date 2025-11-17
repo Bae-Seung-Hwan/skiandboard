@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<section class="container" style="max-width:520px;">
+  <h1>회원가입</h1>
+
+  <form th:action="@{/signup}" method="post" th:object="${form}" style="display:grid;gap:12px;">
+    <label>
+      아이디
+      <input type="text" th:field="*{username}" required
+             placeholder="영문/숫자 3~50자"
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+    <div class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"
+         style="color:#b00020;font-size:13px;"></div>
+
+    <label>
+      비밀번호
+      <input type="password" th:field="*{password}" required
+             placeholder="8자 이상"
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+    <div class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"
+         style="color:#b00020;font-size:13px;"></div>
+
+    <label>
+      비밀번호 확인
+      <input type="password" th:field="*{confirmPassword}" required
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+    <div class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"
+         style="color:#b00020;font-size:13px;"></div>
+
+    <label>
+      닉네임
+      <input type="text" th:field="*{displayName}" required
+             style="width:100%;padding:10px;border:1px solid #e5eaf0;border-radius:8px;">
+    </label>
+    <div class="field-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"
+         style="color:#b00020;font-size:13px;"></div>
+
+    <!-- CSRF -->
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+    <button type="submit" class="btn" style="border-color:#6b46c1;color:#6b46c1;border-radius:8px;">가입하기</button>
+  </form>
+
+  <p style="margin-top:10px;font-size:14px;color:#666;">
+    이미 계정이 있나요? <a th:href="@{/login}">로그인</a>
+  </p>
+</section>
+</body>
+</html>

@@ -1,0 +1,23 @@
+/* 레이아웃 */
+.map-layout{
+  display:grid;
+  grid-template-columns: 1fr 340px; /* 지도 | 우측 리스트 */
+  gap:24px;
+  align-items:start;
+  max-width:1500px;  /* 컨테이너 폭은 취향대로 */
+  margin:0 auto;
+  padding:0 16px 40px;
+}
+
+/* 지도 높이 ↑ 여기만 키워주면 됨 */
+#map{
+  width:100%;
+  height:1200px;      /* ← 520px -> 720px 또는 800px로 */
+  border-radius:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+
+@media (max-width: 960px){
+  .map-layout{ grid-template-columns:1fr; }
+  #map{ height:60vh; }   /* 모바일은 화면 높이 기준 */
+}

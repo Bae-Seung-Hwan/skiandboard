@@ -1,0 +1,6 @@
+.chip{display:inline-block;padding:.25rem .5rem;border-radius:.5rem;background:#eee}
+.chip.level1{background:#e6f7ff}
+.chip.level2{background:#f0fff4}
+.chip.level3{background:#fffbe6}
+.chip.level4{background:#fff0f0}
+.chip.level5{background:#ffe6e6}

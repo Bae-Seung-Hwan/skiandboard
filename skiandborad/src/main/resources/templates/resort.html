@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+	<head>
+	  <th:block th:replace="~{fragments/_head :: head}"></th:block>
+	  <style>
+	    /* resort.html 전용 스타일 */
+	    main { max-width:1080px; margin:0 auto; padding:24px 16px; }
+	    .hero-img{width:100%;max-height:420px;object-fit:cover;border-radius:16px;margin-bottom:24px}
+	    .resort-header h1{font-size:2rem;margin:0}
+	    .resort-header .desc{color:#555;margin-top:8px;line-height:1.7}
+	    .score-table{width:100%;border-collapse:collapse;margin-top:16px}
+	    .score-table th,.score-table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
+	    .price-box,.info-box{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:20px}
+	    .homepage-link{display:inline-block;margin-top:12px;padding:8px 12px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none}
+	  </style>
+	</head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+<div class="divider"></div>
+
+<main>
+  <img class="hero-img" th:if="${resort.heroImageUrl != null}" th:src="${resort.heroImageUrl}" alt="스키장 이미지"/>
+
+  <section class="resort-header">
+    <h1 th:text="${resort.name}">리조트명</h1>
+	<!-- 스키장 날씨 -->
+	<section class="panel" th:if="${resort != null}">
+	  <h3>스키장 날씨</h3>
+	  <div id="weather">불러오는 중...</div>
+	</section>
+
+	<!-- 정적 JS는 th:src로 (컨텍스트 패스 자동 반영) -->
+	<script th:src="@{/js/weather.js}"></script>
+
+	<!-- resort.id 전달해서 호출 -->
+	<script th:inline="javascript" th:if="${resort != null}">
+	  const resortId = /*[[${resort.id}]]*/ 0;
+	  loadWeather(resortId);   // 한 개 인자만!
+	</script>
+    <p class="desc" th:text="${resort.longDescription}">스키장 설명</p>
+
+    <a th:if="${resort.homepageUrl != null}" class="homepage-link"
+       th:href="${resort.homepageUrl}" target="_blank" rel="noopener">
+      공식 홈페이지 바로가기
+    </a>
+  </section>
+
+  <section class="price-box">
+    <h3>🎟️ 이용 요금</h3>
+    <p th:text="${resort.priceInfo}">성인 1일권 89,000원 / 소인 65,000원</p>
+  </section>
+
+  <section class="info-box">
+    <h3>📊 객관적 스키장 평가</h3>
+    <table class="score-table">
+      <tr><th>항목</th><th>점수</th></tr>
+      <tr><td>총평</td><td th:text="${resort.overallRating}">4.5</td></tr>
+      <tr><td>시설</td><td th:text="${resort.facilityScore}">4.6</td></tr>
+      <tr><td>슬로프</td><td th:text="${resort.slopeScore}">4.7</td></tr>
+      <tr><td>접근성</td><td th:text="${resort.accessibilityScore}">4.3</td></tr>
+      <tr><td>설질</td><td th:text="${resort.snowQualityScore}">4.8</td></tr>
+    </table>
+  </section>
+</main>
+
+<footer class="footer">© Ski&Board</footer>
+</body>
+</html>
