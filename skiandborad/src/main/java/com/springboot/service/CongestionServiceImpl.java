@@ -1,47 +1,103 @@
 package com.springboot.service;
 
+import com.springboot.domain.SkiResort;
 import com.springboot.dto.CongestionDto;
+import com.springboot.dto.WeatherDto;
 import com.springboot.repository.SkiResortRepository;
-
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-//혼잡도 점수 매기기
+import java.time.temporal.ChronoUnit;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CongestionServiceImpl implements CongestionService {
 
-    private final SkiResortRepository resortRepo;
-    private final WeatherService weatherService; // 날씨 기반 가중치 활용
+    private final SkiResortRepository skiResortRepository;
+    private final WeatherService weatherService;
+    private final TrafficService trafficService;
 
     @Override
     public CongestionDto estimate(Long resortId) {
-        var r = resortRepo.findById(resortId).orElseThrow();
-        var w = weatherService.getWeatherForResort(resortId);
 
-        int score = 0;
-        var dow = LocalDate.now().getDayOfWeek();
-        var now = LocalTime.now();
+        SkiResort resort = skiResortRepository.findById(resortId)
+                .orElseThrow(() -> new IllegalArgumentException("리조트를 찾을 수 없습니다. id=" + resortId));
 
-        boolean weekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
-        if (weekend) score += 2; // 주말 가중치
-        if (now.isAfter(LocalTime.of(9,0)) && now.isBefore(LocalTime.of(15,0))) score += 1; // 피크타임
-        if (w.snowfallCm() > 3) score += 1; // 신설 눈 → 붐빔 경향
-        if (Math.abs(w.temperatureC()) < 3) score += 1; // 포근한 날 → 이용 증가
+        double rating = resort.getOverallRating() != null ? resort.getOverallRating() : 3.0;
 
-        // 리조트 인기(선택): SkiResort에 popularityScore가 있으면 1~2점 가중
-        int popularity = 3;
+        WeatherDto w;
         try {
-            var m = r.getClass().getMethod("getPopularityScore");
-            var val = (Integer) m.invoke(r);
-            if (val != null) popularity = Math.max(1, Math.min(5, val));
-        } catch (Exception ignore) {}
-        score += Math.min(2, popularity / 2);
+            w = weatherService.getWeatherForResort(resortId);
+        } catch (Exception e) {
+            log.warn("혼잡도 계산 중 날씨 조회 실패, 기본값 사용. resortId={}, msg={}", resortId, e.getMessage());
+            w = new WeatherDto(
+                    resortId,
+                    resort.getName(),
+                    0.0, 0.0, 0.0,
+                    "UNKNOWN",
+                    java.time.Instant.now()
+            );
+        }
 
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        DayOfWeek dow = today.getDayOfWeek();
+        boolean weekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
+
+        int score = 2; // 기본 보통
+
+        // --- 요일 ---
+        if (dow == DayOfWeek.SATURDAY) score += 2;
+        else if (dow == DayOfWeek.SUNDAY) score += 1;
+
+        // --- 시간대 ---
+        LocalTime coreStart = LocalTime.of(9,0);
+        LocalTime coreEnd   = LocalTime.of(16,0);
+        LocalTime morningStart = LocalTime.of(7,0);
+        LocalTime eveningEnd   = LocalTime.of(19,0);
+
+        if (now.isAfter(coreStart) && now.isBefore(coreEnd)) {
+            score += 1; // 핵심 시간대
+        } else if (
+                (now.isAfter(morningStart) && now.isBefore(coreStart)) ||
+                (now.isAfter(coreEnd) && now.isBefore(eveningEnd))
+        ) {
+            // 0
+        } else {
+            score -= 1;
+        }
+
+        // --- 적설 ---
+        double snow = w.snowfallCm();
+        if (snow >= 10) score -= 1;
+        else if (snow >= 3) score += 1;
+
+        // --- 기온 ---
+        double temp = w.temperatureC();
+        if (temp <= -12) score -= 2;
+        else if (temp <= -5) score -= 1;
+        else if (temp >= 3)  score -= 1;
+
+        // --- 인기도(평점) ---
+        if (rating >= 4.5) score += 2;
+        else if (rating >= 4.0) score += 1;
+        else if (rating <= 2.5) score -= 1;
+
+        // --- 교통 (ITS 기반) ---
+        int trafficLevel = trafficService.estimateTrafficLevel(resort);
+        if (trafficLevel >= 5) score += 3;
+        else if (trafficLevel == 4) score += 2;
+        else if (trafficLevel == 3) score += 1;
+        else if (trafficLevel == 1) score -= 1;
+
+        // --- 레벨 변환 ---
         int level = Math.max(1, Math.min(5, score));
+
         String label = switch (level) {
             case 1 -> "LOW";
             case 2 -> "MODERATE";
@@ -49,9 +105,24 @@ public class CongestionServiceImpl implements CongestionService {
             case 4 -> "VERY_HIGH";
             default -> "EXTREME";
         };
-        String reason = String.format("주말:%s, 시간대:%s, 신설:%.1fcm, 기온:%.1f°C, 인기:%d",
-                weekend, now, w.snowfallCm(), w.temperatureC(), popularity);
 
-        return new CongestionDto(r.getId(), r.getName(), level, label, reason);
+        String reason = String.format(
+                "요일:%s(%s), 시간대:%s, 기온:%.1f°C, 신설:%.1fcm, 평점:%.1f, 교통:Lv%d",
+                dow,
+                weekend ? "주말" : "평일",
+                now.truncatedTo(ChronoUnit.MINUTES),
+                temp,
+                snow,
+                rating,
+                trafficLevel
+        );
+
+        return new CongestionDto(
+                resort.getId(),
+                resort.getName(),
+                level,
+                label,
+                reason
+        );
     }
 }
