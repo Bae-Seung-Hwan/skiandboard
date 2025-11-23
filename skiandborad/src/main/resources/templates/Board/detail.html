@@ -1,46 +1,177 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/_head :: head}"></head>
 <body>
 <header th:replace="~{fragments/_nav :: nav}"></header>
 
-<section class="container">
-  <a th:href="@{/board}">← 목록</a>
-  <h1 th:text="${post.title}">제목</h1>
+<main class="container board-detail">
+  <!-- 상단 헤더 -->
+  <section class="board-detail__header">
+    <div class="board-detail__title-row">
+      <h1 class="board-detail__title" th:text="${post.title}">제목</h1>
 
+      <div class="board-detail__chips">
+        <!-- 카테고리 뱃지 -->
+        <span class="chip chip--category"
+              th:text="${post.category}">카테고리</span>
 
-  <div class="meta">
-    <span th:text="${post.authorName}"></span> ·
-    <span th:text="${post.category}"></span> ·
-    <span th:text="${#temporals.format(post.createdAt,'yyyy-MM-dd HH:mm')}"></span> ·
-    <span>조회 <b th:text="${post.viewCount}"></b></span>
-  </div>
+        <!-- 숨김 여부 (관리자/작성자에게만 보여도 되고, 일단 모두 표시) -->
+        <span class="chip chip--danger"
+              th:if="${post.hidden}">숨김 글</span>
+      </div>
+    </div>
 
-  <article class="content"
-           th:utext="${#strings.replace(post.content, '\n', '<br/>')}"></article>
+    <div class="board-detail__meta">
+      <div class="board-detail__meta-left">
+        <span class="board-detail__author"
+              th:text="${post.authorName}">작성자</span>
+        <span class="board-detail__dot">·</span>
+        <span class="board-detail__date"
+              th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">
+          2025-01-01 12:00
+        </span>
+        <span class="board-detail__dot"
+              th:if="${post.updatedAt != null}">·</span>
+        <span class="board-detail__date board-detail__date--muted"
+              th:if="${post.updatedAt != null}"
+              th:text="'수정: ' + ${#temporals.format(post.updatedAt, 'yyyy-MM-dd HH:mm')}">
+          수정: 2025-01-01 13:00
+        </span>
+      </div>
 
-  <div class="actions">
-    <a th:href="@{'/board/' + ${post.id} + '/edit'}">수정</a>
-    <form th:action="@{'/board/' + ${post.id} + '/delete'}" method="post" style="display:inline">
-      <button type="submit" onclick="return confirm('삭제할까요?')">삭제</button>
-    </form>
-  </div>
+      <div class="board-detail__meta-right">
+        <span class="board-detail__views">
+          조회
+          <strong th:text="${post.viewCount}">0</strong>
+        </span>
+      </div>
+    </div>
+  </section>
 
-  <hr/>
-  <h3>댓글</h3>
-  <ul>
-    <li th:each="c : ${post.comments}">
-      <b th:text="${c.authorName}">익명</b>
-      <small th:text="${#temporals.format(c.createdAt,'yyyy-MM-dd HH:mm')}"></small>
-      <p th:text="${c.content}"></p>
-    </li>
-  </ul>
+  <!-- 본문 -->
+  <section class="board-detail__body">
+    <article class="card card--post">
+      <div class="card__content board-detail__content"
+           th:text="${post.content}">
+        본문 내용
+      </div>
+    </article>
+  </section>
 
-  <form th:action="@{'/board/' + ${post.id} + '/comments'}" method="post" th:object="${commentForm}">
-    <textarea th:field="*{content}" rows="3" placeholder="댓글을 입력하세요"></textarea>
-    <button type="submit">등록</button>
-  </form>
-</section>
+  <!-- 액션 버튼 -->
+  <section class="board-detail__actions">
+    <div class="board-detail__actions-left">
+      <a th:href="@{/board}" class="btn btn--ghost">← 목록으로</a>
+    </div>
+
+    <div class="board-detail__actions-right">
+      <!-- 로그인 한 유저에게만 노출 (실제 권한/작성자 체크는 서버에서 검증) -->
+      <sec:authorize access="isAuthenticated()">
+        <a class="btn btn--secondary"
+           th:href="@{|/board/${post.id}/edit|}">
+          수정
+        </a>
+
+        <form th:action="@{|/board/${post.id}/delete|}"
+              method="post"
+              style="display:inline;"
+              onsubmit="return confirm('정말 이 글을 삭제하시겠어요?');">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn--danger">삭제</button>
+        </form>
+      </sec:authorize>
+    </div>
+  </section>
+
+  <hr class="board-detail__divider"/>
+
+  <!-- 댓글 영역 -->
+  <section class="board-detail__comments">
+    <h2 class="board-detail__comments-title">
+      댓글
+      <span class="board-detail__comments-count"
+            th:text="${#lists.size(post.comments)}">0</span>
+    </h2>
+
+    <!-- 댓글 리스트 -->
+    <div class="comment-list"
+         th:if="${post.comments != null and !#lists.isEmpty(post.comments)}">
+      <article class="comment-item"
+               th:each="c : ${post.comments}">
+        <header class="comment-item__header">
+          <div class="comment-item__meta">
+            <span class="comment-item__author"
+                  th:text="${c.authorName}">댓글 작성자</span>
+            <span class="comment-item__dot">·</span>
+            <span class="comment-item__date"
+                  th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">
+              2025-01-01 12:34
+            </span>
+          </div>
+
+          <div class="comment-item__actions">
+            <!-- 예시: c.mine == true 일 때 삭제 버튼 노출 (DTO에 따라 수정 가능) -->
+            <sec:authorize access="isAuthenticated()">
+              <form th:if="${c.mine}"
+                    th:action="@{|/comments/${c.id}/delete|}"
+                    method="post"
+                    onsubmit="return confirm('댓글을 삭제하시겠어요?');">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="comment-item__delete">삭제</button>
+              </form>
+            </sec:authorize>
+          </div>
+        </header>
+
+        <p class="comment-item__body"
+           th:text="${c.content}">
+          댓글 내용
+        </p>
+      </article>
+    </div>
+
+    <!-- 댓글이 없을 때 -->
+    <p class="comment-list__empty"
+       th:if="${post.comments == null or #lists.isEmpty(post.comments)}">
+      아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+    </p>
+
+    <!-- 댓글 작성 폼 -->
+    <sec:authorize access="isAuthenticated()">
+      <section class="comment-form">
+        <h3 class="comment-form__title">댓글 작성</h3>
+
+        <form th:action="@{|/board/${post.id}/comments|}"
+              th:object="${commentForm}"
+              method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+          <textarea class="comment-form__textarea"
+                    th:field="*{content}"
+                    rows="3"
+                    placeholder="댓글을 입력해주세요."></textarea>
+          <div class="err"
+               th:if="${#fields.hasErrors('content')}"
+               th:errors="*{content}"></div>
+
+          <div class="comment-form__actions">
+            <button type="submit" class="btn">등록</button>
+          </div>
+        </form>
+      </section>
+    </sec:authorize>
+
+    <!-- 비로그인 안내 -->
+    <sec:authorize access="isAnonymous()">
+      <div class="comment-form__guest">
+        <p>댓글을 작성하려면 <a th:href="@{/login}">로그인</a> 해주세요.</p>
+      </div>
+    </sec:authorize>
+  </section>
+</main>
+
 </body>
 </html>
 

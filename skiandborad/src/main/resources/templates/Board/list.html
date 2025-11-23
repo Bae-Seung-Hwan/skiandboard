@@ -1,56 +1,158 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/_head :: head}"></head>
 <body>
 <header th:replace="~{fragments/_nav :: nav}"></header>
 
-<section class="container">
-  <h1>게시판</h1>
+<main class="page">
 
-  <!-- 툴바에 클래스 -->
-  <form method="get" class="toolbar">
-    <select name="category">
-      <option th:selected="${category == null}" value="">전체</option>
-      <option th:each="c : ${T(com.springboot.domain.BoardCategory).values()}"
-              th:value="${c}" th:text="${c}"
-              th:selected="${c == category}"></option>
-    </select>
+  <!-- 상단 헤더 영역 -->
+  <section class="page-header">
+    <div class="page-header__titles">
+      <h1>커뮤니티 게시판</h1>
+      <p class="page-header__subtitle">
+        스키&보드 정보, 후기, 질문을 자유롭게 나눠보세요.
+      </p>
+    </div>
 
-    <input type="text" name="q" placeholder="검색" th:value="${q}">
-    <select name="sort">
-      <option value="createdAt,desc" th:selected="${sort == 'createdAt,desc'}">최신순</option>
-      <option value="views" th:selected="${sort == 'views'}">조회수순</option>
-    </select>
+    <div class="page-header__meta">
+      <!-- 로그인 한 사용자만 글쓰기 버튼 보이기 -->
+      <a sec:authorize="isAuthenticated()"
+         th:href="@{/board/new}"
+         class="btn btn--primary">
+        글쓰기
+      </a>
+      <a sec:authorize="isAnonymous()"
+         th:href="@{/login}"
+         class="btn btn--ghost">
+        로그인 후 글쓰기
+      </a>
+    </div>
+  </section>
 
-    <button type="submit" class="btn">적용</button>
-    <a th:href="@{/board/new}" class="btn">글쓰기</a>
-  </form>
-
-  <!-- 리스트에 클래스 + 빈 상태 처리 -->
-  <ul class="post-list">
-    <li class="post-empty" th:if="${posts.totalElements == 0}">아직 글이 없습니다. 첫 글을 써보세요!</li>
-
-    <li th:each="p : ${posts.content}">
-      <a th:href="@{'/board/' + ${p.id}}">
-        <div>
-          <div class="post-title" th:text="${p.title}">제목</div>
-          <div class="post-meta">
-            <span th:text="${p.authorName}">작성자</span>
-            <span th:text="${p.category}">FREE</span>
-            <span th:text="${#temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</span>
+  <!-- 검색 / 필터 영역 (GET /board?q=&category=) -->
+  <section class="card board-filters">
+    <form th:action="@{/board}" method="get" class="board-filters__form">
+      <div class="board-filters__left">
+        <div class="form-field">
+          <label class="form-field__label">검색어</label>
+          <div class="form-field__control">
+            <input type="text"
+                   name="q"
+                   th:value="${param.q}"
+                   placeholder="제목, 내용, 작성자로 검색"
+                   class="input input--sm"/>
           </div>
         </div>
-        <div class="post-meta">조회 <b th:text="${p.viewCount}">0</b></div>
+
+        <div class="form-field">
+          <label class="form-field__label">카테고리</label>
+          <div class="form-field__control">
+            <select name="category" class="select select--sm">
+              <option value="">전체</option>
+              <option th:each="c : ${T(com.springboot.domain.BoardCategory).values()}"
+                      th:value="${c}"
+                      th:selected="${param.category != null and param.category[0] == c.name()}"
+                      th:text="${c}">
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="board-filters__right">
+        <button type="submit" class="btn btn--ghost btn--sm">적용</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- 게시글 목록 카드 -->
+  <section class="card board-list-card">
+    <div class="board-list-header">
+      <div class="board-list-header__left">
+        <span class="board-list-header__badge">게시글</span>
+        <span class="board-list-header__count"
+              th:if="${page != null}"
+              th:text="'총 ' + ${page.totalElements} + '개'">총 0개</span>
+      </div>
+    </div>
+
+    <!-- 목록 -->
+    <div class="board-list">
+      <div class="board-list__row board-list__row--head">
+        <div class="board-list__col board-list__col--category">분류</div>
+        <div class="board-list__col board-list__col--title">제목</div>
+        <div class="board-list__col board-list__col--author">작성자</div>
+        <div class="board-list__col board-list__col--date">작성일</div>
+        <div class="board-list__col board-list__col--views">조회</div>
+      </div>
+
+      <!-- 실제 데이터 -->
+      <div class="board-list__row"
+           th:each="p : ${page.content}">
+        <div class="board-list__col board-list__col--category">
+          <span class="chip chip--soft"
+                th:text="${p.category()}">NOTICE</span>
+        </div>
+
+        <div class="board-list__col board-list__col--title">
+          <a th:href="@{/board/{id}(id=${p.id()})}"
+             class="board-list__title-link">
+            <span th:text="${p.title()}">제목입니다</span>
+          </a>
+        </div>
+
+        <div class="board-list__col board-list__col--author"
+             th:text="${p.authorName()}">
+          닉네임
+        </div>
+
+        <div class="board-list__col board-list__col--date"
+             th:text="${#temporals.format(p.createdAt(), 'yyyy.MM.dd HH:mm')}">
+          2025.11.23 01:23
+        </div>
+
+        <div class="board-list__col board-list__col--views"
+             th:text="${p.viewCount()}">
+          0
+        </div>
+      </div>
+
+      <!-- 게시글 없을 때 -->
+      <div class="board-list__empty"
+           th:if="${page == null or page.totalElements == 0}">
+        아직 등록된 게시글이 없습니다. 첫 글의 주인공이 되어 보세요!
+      </div>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <nav class="pagination"
+         th:if="${page != null and page.totalPages > 1}">
+      <a class="pagination__btn"
+         th:classappend="${page.first} ? ' is-disabled'"
+         th:href="${page.first} ? '#' : @{/board(page=${page.number - 1}, q=${param.q}, category=${param.category})}">
+        이전
       </a>
-    </li>
-  </ul>
 
-  <nav class="pagination">
-    <a th:if="${posts.hasPrevious()}" th:href="@{|/board?page=${posts.number-1}&category=${category}&q=${q}&sort=${sort}|}">이전</a>
-    <span th:text="${posts.number+1}"></span>/<span th:text="${posts.totalPages}"></span>
-    <a th:if="${posts.hasNext()}" th:href="@{|/board?page=${posts.number+1}&category=${category}&q=${q}&sort=${sort}|}">다음</a>
-  </nav>
-</section>
+      <span class="pagination__pages">
+        <a th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+           th:href="@{/board(page=${i}, q=${param.q}, category=${param.category})}"
+           th:text="${i + 1}"
+           th:class="'pagination__page' + (${page.number} == ${i} ? ' is-active' : '')">
+          1
+        </a>
+      </span>
 
+      <a class="pagination__btn"
+         th:classappend="${page.last} ? ' is-disabled'"
+         th:href="${page.last} ? '#' : @{/board(page=${page.number + 1}, q=${param.q}, category=${param.category})}">
+        다음
+      </a>
+    </nav>
+  </section>
+
+</main>
 </body>
 </html>

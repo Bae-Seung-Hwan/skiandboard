@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<main class="page-container">
+  <section class="page-header">
+    <h1>내 댓글</h1>
+    <p class="page-sub" th:text="|${displayName} 님이 작성한 댓글 목록입니다.|"></p>
+  </section>
+
+  <section class="page-content" style="display:grid; grid-template-columns:260px 1fr; gap:24px;">
+    <aside class="card" style="padding:12px;">
+      <nav class="mypage-nav">
+        <a th:href="@{/mypage}" class="mypage-nav__item">요약</a>
+        <a th:href="@{/mypage/profile}" class="mypage-nav__item">내 정보</a>
+        <a th:href="@{/mypage/posts}" class="mypage-nav__item">내 게시글</a>
+        <a th:href="@{/mypage/comments}" class="mypage-nav__item is-active">내 댓글</a>
+      </nav>
+    </aside>
+
+    <section class="card">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+        <tr>
+          <th style="text-align:left;">내용</th>
+          <th>게시글</th>
+          <th>작성일</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${comments}">
+          <td th:text="${c.content}"></td>
+          <td>
+            <a th:href="@{|/board/${c.postId}|}"
+               th:text="${c.postTitle}"></a>
+          </td>
+          <td th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(comments)}">
+          <td colspan="3">작성한 댓글이 없습니다.</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+  </section>
+</main>
+</body>
+</html>

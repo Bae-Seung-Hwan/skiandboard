@@ -51,7 +51,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         int sizeScore = Math.min(5, (elevation / 300) + (slopeCount / 5)); // 0~5
         return switch (skill) {
             case BEGINNER -> (5 - sizeScore) * 0.6 + 1.0;
-            case INTERMEDIATE -> 1.0 + Math.abs(3 - sizeScore) * 0.1;
+            case INTERMEDIATE -> 1.3 - Math.abs(3 - sizeScore) * 0.1;
             case ADVANCED -> sizeScore * 0.35 + 1.0;
             case EXPERT -> sizeScore * 0.5 + 1.0;
         };

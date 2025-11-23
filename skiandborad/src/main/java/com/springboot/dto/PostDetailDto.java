@@ -8,6 +8,6 @@ import java.util.List;
 public record PostDetailDto(
   Long id, String title, String content, String authorName,
   BoardCategory category, Instant createdAt, Instant updatedAt,
-  long viewCount, List<CommentDto> comments
+  long viewCount, boolean hidden, List<CommentDto> comments
 ) {}
 

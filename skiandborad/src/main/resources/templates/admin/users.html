@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<main class="page-container" style="max-width:1000px;margin:32px auto;padding:0 16px;">
+  <section class="page-header" style="margin-bottom:16px;">
+    <h1>회원 관리</h1>
+    <p class="page-sub">전체 회원 목록입니다.</p>
+  </section>
+
+  <section class="card">
+	<table style="width:100%;border-collapse:collapse;">
+	  <thead>
+	  <tr>
+	    <th>ID</th>
+	    <th>아이디</th>
+	    <th>닉네임</th>
+	    <th>권한</th>
+	    <th>활성</th>
+	    <th>액션</th>
+	  </tr>
+	  </thead>
+	  <tbody>
+	  <tr th:each="u : ${users}">
+	    <td th:text="${u.id()}"></td>
+	    <td th:text="${u.username()}"></td>
+	    <td th:text="${u.displayName()}"></td>
+	    <td th:text="${u.role()}"></td>
+	    <td th:text="${u.enabled()} ? 'Y' : 'N'"></td>
+	    <td>
+	      <a th:href="@{|/admin/users/${u.id()}/edit|}">수정</a>
+
+	      <form th:action="@{|/admin/users/${u.id()}/toggle-enabled|}"
+	            method="post"
+	            style="display:inline;">
+	        <input type="hidden"
+	               th:if="${_csrf != null}"
+	               th:name="${_csrf.parameterName}"
+	               th:value="${_csrf.token}"/>
+	        <button type="submit"
+	                th:text="${u.enabled()} ? '비활성화' : '활성화'"></button>
+	      </form>
+
+	      <form th:action="@{|/admin/users/${u.id()}/delete|}"
+	            method="post"
+	            style="display:inline;"
+	            onsubmit="return confirm('정말 삭제하시겠습니까?');">
+	        <input type="hidden"
+	               th:if="${_csrf != null}"
+	               th:name="${_csrf.parameterName}"
+	               th:value="${_csrf.token}"/>
+	        <button type="submit" style="color:red;">삭제</button>
+	      </form>
+	    </td>
+	  </tr>
+	  <tr th:if="${#lists.isEmpty(users)}">
+	    <td colspan="6">회원이 없습니다.</td>
+	  </tr>
+	  </tbody>
+	</table>
+
+  </section>
+</main>
+</body>
+</html>

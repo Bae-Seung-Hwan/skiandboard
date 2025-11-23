@@ -2,6 +2,9 @@ package com.springboot.service;
 
 import com.springboot.domain.BoardCategory;
 import com.springboot.dto.*;
+
+import java.util.List;
+
 import org.springframework.data.domain.*;
 
 public interface BoardService {
@@ -16,4 +19,5 @@ public interface BoardService {
   void delete(Long id, String username);
 
   void addComment(Long postId, String username, CommentCreateRequest form);
+  List<PostListItemDto> listNotices(int limit);
 }

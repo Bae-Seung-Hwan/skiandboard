@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<main class="page-container" style="max-width:1100px;margin:32px auto;">
+  <section class="page-header">
+    <h1>게시글 관리</h1>
+    <p class="page-sub">전체 게시글을 관리할 수 있습니다.</p>
+  </section>
+
+  <section class="card">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>제목</th>
+        <th>작성자</th>
+        <th>카테고리</th>
+        <th>작성일</th>
+        <th>조회수</th>
+        <th>상태</th>
+        <th>액션</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <tr th:each="p : ${posts}">
+        <td th:text="${p.id()}"></td>
+        <td th:text="${p.title()}"></td>
+        <td th:text="${p.authorName()}"></td>
+        <td th:text="${p.category()}"></td>
+        <td th:text="${#temporals.format(p.createdAt(), 'yyyy-MM-dd HH:mm')}"></td>
+        <td th:text="${p.viewCount()}"></td>
+
+        <!-- 상태 -->
+        <td th:text="${p.hidden()} ? '숨김' : '표시'"></td>
+
+        <!-- 액션 -->
+        <td>
+          <form th:action="@{|/admin/posts/${p.id()}/toggle-hidden|}" method="post" style="display:inline;">
+            <button type="submit"
+                    th:text="${p.hidden()} ? '보이기' : '숨기기'"></button>
+          </form>
+
+          <form th:action="@{|/admin/posts/${p.id()}/delete|}" 
+                method="post" style="display:inline;"
+                onsubmit="return confirm('정말 삭제할까요?');">
+            <button type="submit" style="color:red;">삭제</button>
+          </form>
+        </td>
+      </tr>
+
+      <tr th:if="${#lists.isEmpty(posts)}">
+        <td colspan="8">게시글이 없습니다.</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

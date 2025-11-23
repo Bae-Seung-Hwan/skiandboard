@@ -51,9 +51,11 @@ public class CongestionServiceImpl implements CongestionService {
 
         int score = 2; // 기본 보통
 
-        // --- 요일 ---
-        if (dow == DayOfWeek.SATURDAY) score += 2;
-        else if (dow == DayOfWeek.SUNDAY) score += 1;
+        // --- 요일 (📉 주말 가중치 완화) ---
+        // 기존: 토 +2, 일 +1
+        if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
+            score += 1;  // 주말이면 +1만
+        }
 
         // --- 시간대 ---
         LocalTime coreStart = LocalTime.of(9,0);
@@ -67,7 +69,7 @@ public class CongestionServiceImpl implements CongestionService {
                 (now.isAfter(morningStart) && now.isBefore(coreStart)) ||
                 (now.isAfter(coreEnd) && now.isBefore(eveningEnd))
         ) {
-            // 0
+            // 0 (그냥 유지)
         } else {
             score -= 1;
         }
@@ -88,12 +90,17 @@ public class CongestionServiceImpl implements CongestionService {
         else if (rating >= 4.0) score += 1;
         else if (rating <= 2.5) score -= 1;
 
-        // --- 교통 (ITS 기반) ---
+        // --- 교통 (ITS 기반, 📉 영향 완화) ---
         int trafficLevel = trafficService.estimateTrafficLevel(resort);
-        if (trafficLevel >= 5) score += 3;
-        else if (trafficLevel == 4) score += 2;
-        else if (trafficLevel == 3) score += 1;
-        else if (trafficLevel == 1) score -= 1;
+        if (trafficLevel >= 5) {
+            score += 2;       // 기존 +3 → +2
+        } else if (trafficLevel == 4) {
+            score += 1;       // 기존 +2 → +1
+        } else if (trafficLevel == 3) {
+            // 기존 +1 → 0 으로 완화
+        } else if (trafficLevel == 1) {
+            score -= 1;
+        }
 
         // --- 레벨 변환 ---
         int level = Math.max(1, Math.min(5, score));
@@ -125,4 +132,5 @@ public class CongestionServiceImpl implements CongestionService {
                 reason
         );
     }
+
 }

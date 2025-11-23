@@ -12,6 +12,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 @RequiredArgsConstructor
@@ -34,7 +37,7 @@ public class BoardController {
     Pageable pageable = PageRequest.of(page, 10, s);
     Page<PostListItemDto> result = boardService.list(category, q, pageable);
 
-    model.addAttribute("posts", result);
+    model.addAttribute("page", result);
     model.addAttribute("category", category);
     model.addAttribute("q", q);
     model.addAttribute("sort", sort);
@@ -42,22 +45,31 @@ public class BoardController {
   }
 
   @GetMapping("/{id}")
-  public String detail(@PathVariable("id") Long id, Model model) {
-    model.addAttribute("post", boardService.get(id, true));
-    model.addAttribute("commentForm", new CommentCreateRequest(""));
-    return "board/detail";
+  public String detail(@PathVariable("id") Long id,
+                       Authentication authentication,
+                       Model model) {
+
+      var post = boardService.get(id, true);
+
+      boolean isAdmin = authentication != null &&
+          authentication.getAuthorities().stream()
+              .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+      // 숨김 글 + 관리자 아닌 경우 → 404
+      if (post.hidden() && !isAdmin) {
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+      }
+
+      model.addAttribute("post", post);
+      model.addAttribute("commentForm", new CommentCreateRequest(""));
+      return "board/detail";
   }
 
   @GetMapping("/new")
-  public String newForm(Model model) {
-    // 하드코딩 버전(정확한 상수명 사용)
-    // model.addAttribute("form", new PostCreateRequest("", "", BoardCategory.FREE));
-
-    var first = BoardCategory.values()[0];
-    model.addAttribute("form", new PostCreateRequest("", "", first));
-
-    model.addAttribute("mode", "create");
-    return "board/form";
+  public String createForm(Model model) {
+      model.addAttribute("mode", "create");
+      model.addAttribute("form", new PostCreateRequest("", "", null));
+      return "board/form";
   }
 
   @PostMapping("/new")
@@ -71,11 +83,16 @@ public class BoardController {
 
   @GetMapping("/{id}/edit")
   public String editForm(@PathVariable("id") Long id, Model model) {
-    var post = boardService.get(id, false);
-    model.addAttribute("form", new PostUpdateRequest(post.title(), post.content(), post.category()));
-    model.addAttribute("mode", "edit");
-    model.addAttribute("postId", id);
-    return "board/form";
+      var post = boardService.get(id, true);
+
+      model.addAttribute("mode", "edit");
+      model.addAttribute("postId", id); // ⭐ 위에서 쓴 postId
+      model.addAttribute("form", new PostUpdateRequest(
+              post.title(),
+              post.content(),
+              post.category()
+      ));
+      return "board/form";
   }
 
   @PostMapping("/{id}/edit")

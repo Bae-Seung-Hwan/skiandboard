@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 @RequiredArgsConstructor
@@ -57,31 +59,54 @@ public class PostServiceImpl implements PostService {
   }
 
   // ===== 상세 =====
+  private String getCurrentUsername() {
+	    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+	        return null;
+	    }
+	    return auth.getName();
+	}
   @Override
   @Transactional(readOnly = true)
   public PostDetailDto getDetail(Long id) {
-    var p = postRepo.findById(id).orElseThrow();
-    var comments = commentRepo.findByPostOrderByCreatedAtAsc(p).stream()
-        .map(c -> new CommentDto(
-            c.getId(),
-            c.getAuthor() != null ? c.getAuthor().getDisplayName() : "(탈퇴회원)",
-            c.getContent(),
-            c.getCreatedAt()
-        ))
-        .collect(Collectors.toList());
+      var p = postRepo.findById(id).orElseThrow();
 
-    return new PostDetailDto(
-        p.getId(),
-        p.getTitle(),
-        p.getContent(),
-        p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
-        p.getCategory(),
-        p.getCreatedAt(),
-        p.getUpdatedAt(),
-        p.getViewCount(),
-        comments
-    );
+      String currentUsername = getCurrentUsername();   // 🔹 현재 로그인 사용자
+
+      var comments = commentRepo.findByPostOrderByCreatedAtAsc(p).stream()
+          .map(c -> {
+              String authorName = (c.getAuthor() != null)
+                      ? c.getAuthor().getDisplayName()
+                      : "(탈퇴회원)";
+
+              boolean mine = currentUsername != null
+                      && c.getAuthor() != null
+                      && currentUsername.equals(c.getAuthor().getUsername());
+
+              return new CommentDto(
+                  c.getId(),
+                  authorName,
+                  c.getContent(),
+                  c.getCreatedAt(),
+                  mine          
+              );
+          })
+          .collect(Collectors.toList());
+
+      return new PostDetailDto(
+          p.getId(),
+          p.getTitle(),
+          p.getContent(),
+          p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
+          p.getCategory(),
+          p.getCreatedAt(),
+          p.getUpdatedAt(),
+          p.getViewCount(),
+          p.isHidden(),
+          comments
+      );
   }
+
 
   // ===== 조회수 =====
   @Override
@@ -116,7 +141,8 @@ public class PostServiceImpl implements PostService {
         p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
         p.getCategory(),
         p.getCreatedAt(),
-        p.getViewCount()
+        p.getViewCount(),
+        p.isHidden()
     );
   }
 }

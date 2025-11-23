@@ -37,4 +37,7 @@ public class BoardPost {
 
   @Column(name = "view_count", nullable = false)
   private long viewCount;
+  
+  @Column(nullable = false)
+  private boolean hidden = false;
 }

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<header th:replace="~{fragments/_nav :: nav}"></header>
+
+<main class="page-container" style="max-width:1000px;margin:32px auto;padding:0 16px;">
+  <section class="page-header" style="margin-bottom:16px;">
+    <h1>스키장 관리</h1>
+    <p class="page-sub">등록된 스키장 목록입니다. (수정/삭제 기능은 이후 단계에서 추가)</p>
+  </section>
+
+  <section class="card">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>설명</th>
+        <th>위도</th>
+        <th>경도</th>
+        <th>상세보기</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${resorts}">
+        <td th:text="${r.id()}"></td>
+        <td th:text="${r.name()}"></td>
+        <td th:text="${r.description()}"></td>
+        <td th:text="${r.lat()}"></td>
+        <td th:text="${r.lng()}"></td>
+        <td>
+          <a th:href="@{|/resorts/${r.id()}|}">사용자 화면</a>
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(resorts)}">
+        <td colspan="6">등록된 스키장이 없습니다.</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

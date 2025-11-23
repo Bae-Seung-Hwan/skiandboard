@@ -5,5 +5,5 @@ import java.time.Instant;
 
 public record PostListItemDto(
   Long id, String title, String authorName,
-  BoardCategory category, Instant createdAt, long viewCount
+  BoardCategory category, Instant createdAt, long viewCount, boolean hidden
 ) {}

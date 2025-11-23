@@ -11,7 +11,10 @@
     </a>
 
     <div class="tabs">
-      <a class="tab is-active" href="#" onclick="showDomestic(); return false;">국내</a>
+	<li>
+	  <a  class="tab" th:href="@{/}">국내</a>
+	</li>
+
       <a class="tab" href="#" onclick="showOverseas(); return false;">해외</a>
 	  <a class="tab" th:href="@{/recommend}">스키장 추천</a>
       <a class="tab" th:href="@{/board}">게시판</a>
@@ -24,13 +27,20 @@
       <a th:href="@{/signup}" class="btn">회원가입</a>
     </span>
 
-    <span sec:authorize="isAuthenticated()">
-      <strong><span sec:authentication="principal.displayName"></span></strong>
-      <form th:action="@{/logout}" method="post" style="display:inline;">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <button type="submit" class="btn" style="margin-left:8px;">로그아웃</button>
-      </form>
-    </span>
+	<span sec:authorize="isAuthenticated()">
+	  <a th:href="@{/mypage}" style="margin-right:8px;">
+	    <strong><span sec:authentication="principal.displayName"></span></strong>
+	  </a>
+	  <a th:href="@{/admin}"
+	       sec:authorize="hasRole('ADMIN')"
+	       style="margin-right:10px; color:#e11d48; font-weight:600;">
+	      관리자
+	    </a>
+	  <form th:action="@{/logout}" method="post" style="display:inline;">
+	    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+	    <button type="submit" class="btn" style="margin-left:8px;">로그아웃</button>
+	  </form>
+	</span>
   </div>
 </nav>
 </html>
