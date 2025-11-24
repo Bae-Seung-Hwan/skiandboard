@@ -24,16 +24,17 @@
   <section class="card card--form">
 
     <!-- ✅ 글쓰기 폼 (create) -->
-    <form th:if="${isCreate}"
-          th:object="${form}"
-          th:action="@{/board/new}"
-          method="post"
-          class="form">
+	<form th:if="${isCreate}"
+	      th:object="${form}"
+	      th:action="@{/board/new}"
+	      method="post"
+	      enctype="multipart/form-data"
+	      class="form">
 
-      <input type="hidden"
-             th:if="${_csrf != null}"
-             th:name="${_csrf.parameterName}"
-             th:value="${_csrf.token}"/>
+	    <input type="hidden"
+	           th:if="${_csrf != null}"
+	           th:name="${_csrf.parameterName}"
+	           th:value="${_csrf.token}"/>
 
       <!-- 제목 -->
       <div class="form-field">
@@ -53,7 +54,7 @@
            class="form-field__error"></p>
       </div>
 
-      <!-- 카테고리 + 공개 여부 같은 느낌 -->
+      <!-- 카테고리 + 옵션 -->
       <div class="form-row form-row--2col">
         <div class="form-field">
           <label class="form-field__label">카테고리</label>
@@ -66,7 +67,6 @@
           </div>
         </div>
 
-        <!-- 필요하면 향후 공개범위 등 넣는 자리 -->
         <div class="form-field form-field--placeholder">
           <label class="form-field__label">옵션</label>
           <div class="form-field__control form-field__hint">
@@ -92,6 +92,18 @@
            class="form-field__error"></p>
       </div>
 
+      <!-- 첨부파일 -->
+	  <div class="form-field">
+	        <label class="form-field__label">첨부파일</label>
+	        <div class="form-field__control">
+	          <input type="file" name="attach" class="input-file"/>
+	        </div>
+	      </div>
+
+	      <div class="form-actions">
+	          <button type="submit" class="btn btn--primary">등록</button>
+	      </div>
+
       <!-- 액션 버튼 -->
       <div class="form-actions">
         <button type="submit" class="btn btn--primary">등록</button>
@@ -100,16 +112,17 @@
     </form>
 
     <!-- ✅ 수정 폼 (edit) -->
-    <form th:unless="${isCreate}"
-          th:object="${form}"
-          th:action="@{/board/{id}/edit(id=${postId})}"
-          method="post"
-          class="form">
+	<form th:unless="${isCreate}"
+	      th:object="${form}"
+	      th:action="@{/board/{id}/edit(id=${postId})}"
+	      method="post"
+	      enctype="multipart/form-data"
+	      class="form">
 
-      <input type="hidden"
-             th:if="${_csrf != null}"
-             th:name="${_csrf.parameterName}"
-             th:value="${_csrf.token}"/>
+	    <input type="hidden"
+	           th:if="${_csrf != null}"
+	           th:name="${_csrf.parameterName}"
+	           th:value="${_csrf.token}"/>
 
       <!-- 제목 -->
       <div class="form-field">
@@ -166,13 +179,21 @@
            class="form-field__error"></p>
       </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn--primary">수정</button>
-        <a th:href="@{/board}" class="btn btn--ghost">취소</a>
-      </div>
+      <!-- 첨부파일 -->
+	  <div class="form-field">
+	        <label class="form-field__label">첨부파일 수정</label>
+	        <div class="form-field__control">
+	          <input type="file" name="attach" class="input-file"/>
+	        </div>
+	      </div>
+
+	      <div class="form-actions">
+	          <button type="submit" class="btn btn--primary">수정</button>
+	      </div>
     </form>
 
   </section>
 </main>
 </body>
 </html>
+

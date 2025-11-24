@@ -40,4 +40,13 @@ public class BoardPost {
   
   @Column(nullable = false)
   private boolean hidden = false;
+  
+  @Column(name = "attachment_url")
+  private String attachmentUrl;
+
+  @Column(name = "attachment_original_name")
+  private String attachmentOriginalName;
+
+  @Column(name = "attachment_size")
+  private Long attachmentSize;
 }

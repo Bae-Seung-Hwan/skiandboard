@@ -50,15 +50,37 @@
     </div>
   </section>
 
-  <!-- 본문 -->
   <section class="board-detail__body">
-    <article class="card card--post">
-      <div class="card__content board-detail__content"
-           th:text="${post.content}">
-        본문 내용
-      </div>
-    </article>
+      <article class="card card--post">
+
+        <!-- 🔥 이미지가 있을 때만 렌더링 -->
+        <div th:if="${post.attachmentUrl != null}" class="board-detail__attachment">
+
+          <!-- 이미지 표시 -->
+          <img th:src="${post.attachmentUrl}"
+               alt="첨부 이미지"
+               style="max-width: 100%; height: auto;"/>
+
+          <div class="board-detail__attachment-meta">
+            <span th:text="${post.attachmentOriginalName}">파일명</span>
+
+            <span th:if="${post.attachmentSize != null}"
+                  th:text="'(' + ${#numbers.formatInteger(post.attachmentSize / 1024, 1, 'COMMA')} + ' KB)'">
+              (0 KB)
+            </span>
+          </div>
+        </div>
+
+        <!-- 본문 내용 -->
+        <div class="card__content board-detail__content"
+             th:text="${post.content}">
+          본문 내용
+        </div>
+      </article>
   </section>
+
+
+
 
   <!-- 액션 버튼 -->
   <section class="board-detail__actions">

@@ -4,182 +4,242 @@ import com.springboot.domain.*;
 import com.springboot.dto.*;
 import com.springboot.repository.*;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.*;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class BoardServiceImpl implements BoardService {
 
-  private final BoardPostRepository postRepo;
-  private final UserRepository userRepo;
-  private final CommentRepository commentRepo;
+    private final BoardPostRepository postRepo;
+    private final UserRepository userRepo;
+    private final CommentRepository commentRepo;
 
-  // ===== 목록 =====
-  @Override
-  @Transactional(readOnly = true)
-  public Page<PostListItemDto> list(BoardCategory category, String q, Pageable pageable) {
-    Page<BoardPost> page;
+    @Value("${app.upload-dir}")
+    private String uploadDir;
 
-    boolean hasCategory = (category != null);
-    boolean hasQ = (q != null && !q.isBlank());
+    // ===== 목록 =====
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PostListItemDto> list(BoardCategory category, String q, Pageable pageable) {
+        Page<BoardPost> page;
 
-    if (hasCategory && hasQ) {
-      page = postRepo.findByCategoryAndTitleContainingIgnoreCaseOrCategoryAndContentContainingIgnoreCase(
-          category, q, category, q, pageable);
-    } else if (hasCategory) {
-      page = postRepo.findByCategory(category, pageable);
-    } else if (hasQ) {
-      page = postRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(q, q, pageable);
-    } else {
-      page = postRepo.findAll(pageable);
+        boolean hasCategory = (category != null);
+        boolean hasQ = (q != null && !q.isBlank());
+
+        if (hasCategory && hasQ) {
+            page = postRepo.findByCategoryAndTitleContainingIgnoreCaseOrCategoryAndContentContainingIgnoreCase(
+                    category, q, category, q, pageable);
+        } else if (hasCategory) {
+            page = postRepo.findByCategory(category, pageable);
+        } else if (hasQ) {
+            page = postRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(q, q, pageable);
+        } else {
+            page = postRepo.findAll(pageable);
+        }
+
+        return page.map(this::toListItemDto);
     }
 
-    return page.map(this::toListItemDto);
-  }
+    // ===== 현재 로그인 유저명 조회 =====
+    private String getCurrentUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+            return null;
+        }
+        return auth.getName();
+    }
 
-  // ===== 상세 =====
-  private String getCurrentUsername() {
-	    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-	    if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
-	        return null;
-	    }
-	    return auth.getName();
-	}
+    // ===== 상세 =====
+    @Override
+    @Transactional
+    public PostDetailDto get(Long id, boolean increaseViewCount) {
 
-	@Override
-	@Transactional
-	public PostDetailDto get(Long id, boolean increaseViewCount) {
+        var p = postRepo.findByIdWithAuthor(id).orElseThrow();
 
-	    var p = postRepo.findByIdWithAuthor(id).orElseThrow();
+        long viewCount = p.getViewCount();
+        if (increaseViewCount) {
+            postRepo.incrementViewCount(id);
+            viewCount++;
+        }
 
-	    long viewCount = p.getViewCount();
-	    if (increaseViewCount) {
-	        postRepo.incrementViewCount(id);
-	        viewCount++;
-	    }
+        String currentUsername = getCurrentUsername();
 
-	    String currentUsername = getCurrentUsername();
+        var comments = commentRepo.findByPostOrderByCreatedAtAsc(p).stream()
+                .map(c -> {
+                    String authorName = c.getAuthor() != null
+                            ? c.getAuthor().getDisplayName()
+                            : "(탈퇴회원)";
 
-	    var comments = commentRepo.findByPostOrderByCreatedAtAsc(p).stream()
-	        .map(c -> {
-	            String authorName = c.getAuthor() != null
-	                    ? c.getAuthor().getDisplayName()
-	                    : "(탈퇴회원)";
+                    boolean mine = currentUsername != null
+                            && c.getAuthor() != null
+                            && currentUsername.equals(c.getAuthor().getUsername());
 
-	            boolean mine = currentUsername != null
-	                    && c.getAuthor() != null
-	                    && currentUsername.equals(c.getAuthor().getUsername());
+                    return new CommentDto(
+                            c.getId(),
+                            authorName,
+                            c.getContent(),
+                            c.getCreatedAt(),
+                            mine
+                    );
+                })
+                .toList();
 
-	            return new CommentDto(
-	                c.getId(),
-	                authorName,
-	                c.getContent(),
-	                c.getCreatedAt(),
-	                mine   // 🔥 추가된 mine 값
-	            );
-	        })
-	        .toList();
+        return new PostDetailDto(
+                p.getId(),
+                p.getTitle(),
+                p.getContent(),
+                p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
+                p.getCategory(),
+                p.getCreatedAt(),
+                p.getUpdatedAt(),
+                viewCount,
+                p.isHidden(),
+                p.getAttachmentUrl(),          // ★ URL
+                p.getAttachmentOriginalName(), // ★ 원본 파일명
+                p.getAttachmentSize(),         // ★ 크기
+                comments
+        );
+    }
 
-	    return new PostDetailDto(
-	        p.getId(),
-	        p.getTitle(),
-	        p.getContent(),
-	        p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
-	        p.getCategory(),
-	        p.getCreatedAt(),
-	        p.getUpdatedAt(),
-	        viewCount,
-	        p.isHidden(),
-	        comments
-	    );
-	}
+    // ===== 파일 저장 헬퍼 =====
+    private record FileInfo(String url, String originalName, Long size) {}
 
-  // ===== 생성 =====
-  @Override
-  public Long create(String username, PostCreateRequest form) {
-    var author = userRepo.findByUsername(username).orElse(null); // 익명/탈퇴 대비
-    var post = BoardPost.builder()
-        .title(form.title())
-        .content(form.content())
-        .category(form.category())
-        .author(author)
-        .viewCount(0)
-        .build();
-    return postRepo.save(post).getId();
-  }
+    private FileInfo saveFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) return null;
 
-  // ===== 수정 =====
-  @Override
-  public void update(Long id, String username, PostUpdateRequest form) {
-    var post = postRepo.findById(id).orElseThrow();
-    var editor = userRepo.findByUsername(username).orElseThrow();
+        try {
+            String originalName = file.getOriginalFilename();
+            long size = file.getSize();
 
-    boolean isOwner = post.getAuthor() != null && post.getAuthor().getId().equals(editor.getId());
-    boolean isAdmin = editor.getRole() == Role.ADMIN;
-    if (!isOwner && !isAdmin) throw new IllegalStateException("수정 권한이 없습니다.");
+            String ext = "";
+            if (originalName != null && originalName.lastIndexOf('.') != -1) {
+                ext = originalName.substring(originalName.lastIndexOf('.'));
+            }
 
-    post.setTitle(form.title());
-    post.setContent(form.content());
-    post.setCategory(form.category());
-  }
+            String savedName = UUID.randomUUID() + ext;
 
-  // ===== 삭제 =====
-  @Override
-  public void delete(Long id, String username) {
-    var post = postRepo.findById(id).orElseThrow();
-    var editor = userRepo.findByUsername(username).orElseThrow();
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
 
-    boolean isOwner = post.getAuthor() != null && post.getAuthor().getId().equals(editor.getId());
-    boolean isAdmin = editor.getRole() == Role.ADMIN;
-    if (!isOwner && !isAdmin) throw new IllegalStateException("삭제 권한이 없습니다.");
+            Path target = uploadPath.resolve(savedName);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-    postRepo.delete(post);
-  }
+            String url = "/skiandboard/uploads/" + savedName;   // WebMvcConfig와 매칭
 
-  // ===== 댓글 작성 =====
-  @Override
-  public void addComment(Long postId, String username, CommentCreateRequest form) {
-    var post = postRepo.findById(postId).orElseThrow();
-    var author = (username != null)
-        ? userRepo.findByUsername(username).orElse(null)
-        : null;
+            return new FileInfo(url, originalName, size);
+        } catch (Exception e) {
+            e.printStackTrace(); // 필요하면 logger로 변경
+            return null;
+        }
+    }
 
-    var comment = Comment.builder()
-        .post(post)
-        .author(author)
-        .content(form.content())
-        .build();
+    // ===== 생성 =====
+    @Override
+    public Long create(String username, PostCreateRequest form, MultipartFile file) {
 
-    commentRepo.save(comment);
-  }
-  @Override
-  public List<PostListItemDto> listNotices(int limit) {
-      Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var author = userRepo.findByUsername(username).orElse(null);
 
-      return postRepo
-              .findByCategoryAndHiddenFalse(BoardCategory.NOTICE, pageable) // 🔴 여기
-              .map(this::toListItemDto)
-              .getContent();
-  }
-  // ===== DTO 매핑 =====
-  private PostListItemDto toListItemDto(BoardPost p) {
-    return new PostListItemDto(
-        p.getId(),
-        p.getTitle(),
-        p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
-        p.getCategory(),
-        p.getCreatedAt(),
-        p.getViewCount(),
-        p.isHidden()
-    );
-  }
+        FileInfo info = saveFile(file); // ★ 파일 저장
+
+        var post = BoardPost.builder()
+                .title(form.title())
+                .content(form.content())
+                .category(form.category())
+                .author(author)
+                .viewCount(0)
+                .hidden(false)
+                .attachmentUrl(info != null ? info.url() : null)
+                .attachmentOriginalName(info != null ? info.originalName() : null)
+                .attachmentSize(info != null ? info.size() : null)
+                .build();
+
+        return postRepo.save(post).getId();
+    }
+
+    // ===== 수정 =====
+    @Override
+    public void update(Long id, String username, PostUpdateRequest form, MultipartFile file) {
+        var post = postRepo.findById(id).orElseThrow();
+        var editor = userRepo.findByUsername(username).orElseThrow();
+
+        boolean isOwner = post.getAuthor() != null && post.getAuthor().getId().equals(editor.getId());
+        boolean isAdmin = editor.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) throw new IllegalStateException("수정 권한이 없습니다.");
+
+        post.setTitle(form.title());
+        post.setContent(form.content());
+        post.setCategory(form.category());
+
+        // 새 파일이 올라온 경우에만 교체
+        FileInfo info = saveFile(file);
+        if (info != null) {
+            post.setAttachmentUrl(info.url());
+            post.setAttachmentOriginalName(info.originalName());
+            post.setAttachmentSize(info.size());
+        }
+    }
+
+    // ===== 삭제 =====
+    @Override
+    public void delete(Long id, String username) {
+        var post = postRepo.findById(id).orElseThrow();
+        var editor = userRepo.findByUsername(username).orElseThrow();
+
+        boolean isOwner = post.getAuthor() != null && post.getAuthor().getId().equals(editor.getId());
+        boolean isAdmin = editor.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) throw new IllegalStateException("삭제 권한이 없습니다.");
+
+        postRepo.delete(post);
+    }
+
+    // ===== 댓글 작성 =====
+    @Override
+    public void addComment(Long postId, String username, CommentCreateRequest form) {
+        var post = postRepo.findById(postId).orElseThrow();
+        var author = (username != null)
+                ? userRepo.findByUsername(username).orElse(null)
+                : null;
+
+        var comment = Comment.builder()
+                .post(post)
+                .author(author)
+                .content(form.content())
+                .build();
+
+        commentRepo.save(comment);
+    }
+
+    @Override
+    public List<PostListItemDto> listNotices(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return postRepo
+                .findByCategoryAndHiddenFalse(BoardCategory.NOTICE, pageable)
+                .map(this::toListItemDto)
+                .getContent();
+    }
+
+    // ===== DTO 매핑 =====
+    private PostListItemDto toListItemDto(BoardPost p) {
+        return new PostListItemDto(
+                p.getId(),
+                p.getTitle(),
+                p.getAuthor() != null ? p.getAuthor().getDisplayName() : "(탈퇴회원)",
+                p.getCategory(),
+                p.getCreatedAt(),
+                p.getViewCount(),
+                p.isHidden()
+        );
+    }
 }

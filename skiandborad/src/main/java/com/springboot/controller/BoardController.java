@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
@@ -73,37 +74,36 @@ public class BoardController {
   }
 
   @PostMapping("/new")
-  public String create(@AuthenticationPrincipal UserDetails principal,
-                       @Valid @ModelAttribute("form") PostCreateRequest form,
-                       BindingResult binding) {
-    if (binding.hasErrors()) return "board/form";
-    Long id = boardService.create(principal.getUsername(), form);
-    return "redirect:/board/" + id;
-  }
-
-  @GetMapping("/{id}/edit")
-  public String editForm(@PathVariable("id") Long id, Model model) {
-      var post = boardService.get(id, true);
-
-      model.addAttribute("mode", "edit");
-      model.addAttribute("postId", id); // ⭐ 위에서 쓴 postId
-      model.addAttribute("form", new PostUpdateRequest(
-              post.title(),
-              post.content(),
-              post.category()
-      ));
-      return "board/form";
+  public String create(
+          @Valid @ModelAttribute("form") PostCreateRequest form,
+          BindingResult bindingResult,
+          @AuthenticationPrincipal UserDetails userDetails,
+          @RequestParam(value = "attach", required = false) MultipartFile file
+  ) {
+      if (bindingResult.hasErrors()) {
+          return "board/form";
+      }
+      String username = userDetails.getUsername();
+      Long id = boardService.create(username, form, file);
+      return "redirect:/board/" + id;
   }
 
   @PostMapping("/{id}/edit")
-  public String update(@PathVariable("id") Long id,
-                       @AuthenticationPrincipal UserDetails principal,
-                       @Valid @ModelAttribute("form") PostUpdateRequest form,
-                       BindingResult binding) {
-    if (binding.hasErrors()) return "board/form";
-    boardService.update(id, principal.getUsername(), form);
-    return "redirect:/board/" + id;
+  public String update(
+          @PathVariable Long id,
+          @Valid @ModelAttribute("form") PostUpdateRequest form,
+          BindingResult bindingResult,
+          @AuthenticationPrincipal UserDetails userDetails,
+          @RequestParam(value = "attach", required = false) MultipartFile file
+  ) {
+      if (bindingResult.hasErrors()) {
+          return "board/form";
+      }
+      String username = userDetails.getUsername();
+      boardService.update(id, username, form, file);
+      return "redirect:/board/" + id;
   }
+
 
   @PostMapping("/{id}/delete")
   public String delete(@PathVariable("id") Long id,

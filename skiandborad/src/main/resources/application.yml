@@ -29,3 +29,5 @@ traffic:
   its:
     api-key: 583e1f54f2f54c058eea74f7242cbbd5
     base-url: https://openapi.its.go.kr:9443/trafficInfo
+app:
+  upload-dir: C:\upload
