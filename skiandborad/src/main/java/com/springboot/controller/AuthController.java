@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
   private final AuthService authService;
-
+  //로그인
   @GetMapping("/login")
   public String loginPage(@RequestParam(value = "error", required = false) String error,
                           @RequestParam(value = "logout", required = false) String logout,
@@ -25,7 +25,7 @@ public class AuthController {
     return "auth/login";
   }
 
-  // ✅ 회원가입
+  // 회원가입
   @GetMapping("/signup")
   public String signupForm(Model model) {
     model.addAttribute("form", new SignupRequest("", "", "", ""));

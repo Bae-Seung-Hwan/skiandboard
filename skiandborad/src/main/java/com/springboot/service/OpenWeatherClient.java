@@ -38,9 +38,9 @@ public class OpenWeatherClient {
 
         log.debug("OpenWeather raw response: {}", json);
 
-        Map<String, Object> main  = (Map<String, Object>) json.get("main");              // temp, feels_like, ...
-        Map<String, Object> wind  = (Map<String, Object>) json.get("wind");              // speed
-        Map<String, Object> snow  = (Map<String, Object>) json.getOrDefault("snow", Map.of()); // 1h, 3h
+        Map<String, Object> main  = (Map<String, Object>) json.get("main");              
+        Map<String, Object> wind  = (Map<String, Object>) json.get("wind");              
+        Map<String, Object> snow  = (Map<String, Object>) json.getOrDefault("snow", Map.of());
         List<Map<String, Object>> weatherArr =
                 (List<Map<String, Object>>) json.getOrDefault("weather", List.of());
 
@@ -50,7 +50,7 @@ public class OpenWeatherClient {
 
         String condition = "UNKNOWN";
         if (!weatherArr.isEmpty()) {
-            Object mainText = weatherArr.get(0).get("main"); // Snow, Rain, Clouds ...
+            Object mainText = weatherArr.get(0).get("main");
             if (mainText != null) {
                 condition = mainText.toString().toUpperCase();
             }

@@ -17,62 +17,132 @@
   <aside class="side">
     <h3>국내 스키장</h3>
     <ul id="resortList" class="resort-list">
-      <li th:each="r : ${resorts}" th:attr="data-id=${r.id}" th:attrappend="data-lat=${r.lat},data-lng=${r.lng}">
-        <a th:href="@{'/resorts/' + ${r.id}}">
-          <strong th:text="${r.name}">리조트명</strong>
-          <div class="desc" th:text="${r.description}">설명</div>
+      <!-- ✅ heroImageUrl 을 이용해 썸네일까지 표시 -->
+      <li th:each="r : ${resorts}"
+          th:attr="data-id=${r.id}"
+          th:attrappend="data-lat=${r.lat},data-lng=${r.lng}">
+        <a th:href="@{'/resorts/' + ${r.id}}" class="resort-item">
+          <img th:if="${r.heroImageUrl != null}"
+               th:src="@{${r.heroImageUrl}}"
+               alt="스키장 사진"
+               class="resort-thumb"/>
+
+          <div class="resort-body">
+            <strong th:text="${r.name}">리조트명</strong>
+            <div class="desc" th:text="${r.description}">설명</div>
+          </div>
         </a>
       </li>
-      <li th:if="${#lists.isEmpty(resorts)}" class="empty">등록된 스키장이 아직 없어요.</li>
+
+      <li th:if="${#lists.isEmpty(resorts)}" class="empty">
+        등록된 스키장이 아직 없어요.
+      </li>
     </ul>
   </aside>
 </section>
 
 <footer class="footer">© Ski&Board</footer>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Leaflet CSS / JS -->
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<!-- resorts 리스트를 JS 객체로 주입 -->
 <script th:inline="javascript">
 /*<![CDATA[*/
   const resorts = /*[[${resorts}]]*/ [];
+  const ctxPath = /*[[@{/}]]*/ '';   // 예: "/skiandboard/"
 /*]]>*/
 </script>
 
 <script>
   // 기본 지도 설정
   const map = L.map('map').setView([36.5, 127.8], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
   const skiLayer = L.layerGroup().addTo(map);
-  const skiIcon = L.icon({
-    iconUrl: '/img/icon-ski.png',
+
+  // 기본 아이콘 (이미지 없는 경우 fallback)
+  const defaultSkiIcon = L.icon({
+    iconUrl: (ctxPath.replace(/\/$/, '')) + '/img/icon-ski.png',
     iconSize: [28, 28],
     iconAnchor: [14, 28],
     popupAnchor: [0, -24]
   });
 
+  // ✅ 스키장 사진이 들어간 커스텀 아이콘 생성 함수
+  function createResortIcon(imageUrl) {
+    return L.divIcon({
+      className: 'resort-map-icon',
+      html: `
+        <div class="resort-map-icon__inner">
+          <img src="${imageUrl}" alt="">
+        </div>
+      `,
+      iconSize: [52, 52],
+      iconAnchor: [26, 52],
+      popupAnchor: [0, -52]
+    });
+  }
+
+
   const markerById = new Map();
   let activeHighlight = null;
 
-  //  서버에서 내려준 resorts를 바로 마커로 표시
+  // 서버에서 내려준 resorts를 마커로 표시
   if (resorts && resorts.length) {
     const bounds = [];
-    resorts.forEach(r => {
-      if (!r.lat || !r.lng) return;
-      const marker = L.marker([r.lat, r.lng], { icon: skiIcon })
-        .addTo(skiLayer)
-        .bindPopup(`<b>${r.name}</b><br>${r.description ?? ''}`);
-      markerById.set(String(r.id), marker);
-      bounds.push([r.lat, r.lng]);
-    });
-    if (bounds.length) map.fitBounds(bounds, { padding: [20, 20] });
+
+	resorts.forEach(r => {
+	  if (!r.lat || !r.lng) return;
+
+	  // ✅ heroImageUrl("/img/...") 앞에 컨텍스트 경로 붙이기
+	  const imageUrl = r.heroImageUrl
+	      ? ctxPath.replace(/\/$/, '') + r.heroImageUrl
+	      : null;
+
+	  const imageHtml = imageUrl
+	    ? `<img src="${imageUrl}"
+	             style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:8px;">`
+	    : '';
+
+	  // ❌ 기존: 항상 skiIcon 사용
+	  // const marker = L.marker([r.lat, r.lng], { icon: skiIcon })
+
+	  // ✅ 변경: 사진이 있으면 사진 아이콘, 없으면 기본 아이콘
+	  const icon = imageUrl ? createResortIcon(imageUrl) : defaultSkiIcon;
+
+	  const marker = L.marker([r.lat, r.lng], { icon })
+	    .addTo(skiLayer)
+	    .bindPopup(
+	      `<div style="max-width:240px; line-height:1.4;">
+	         ${imageHtml}
+	         <strong style="font-size:1.1em;">${r.name}</strong><br/>
+	         <span style="color:#555;">${r.description ?? ''}</span>
+	       </div>`
+	    );
+
+	  markerById.set(String(r.id), marker);
+	  bounds.push([r.lat, r.lng]);
+	});
+
+
+    if (bounds.length) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
   }
 
   // 🎯 리스트 hover 이벤트
   const listEl = document.getElementById('resortList');
+
   listEl?.addEventListener('mouseover', e => {
     const li = e.target.closest('li[data-id]');
     if (!li) return;
@@ -105,10 +175,6 @@
     const li = e.target.closest('li[data-id]');
     if (!li) return;
 
-    const id = li.dataset.id;
-    const marker = markerById.get(String(id));
-    if (marker) marker.closePopup();
-
     if (activeHighlight) {
       map.removeLayer(activeHighlight);
       activeHighlight = null;
@@ -116,20 +182,81 @@
 
     li.classList.remove('is-hover');
   });
+
+  // 리스트 클릭 시 해당 마커로 줌 인 + 팝업
+  listEl?.addEventListener('click', e => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+
+    const id = li.dataset.id;
+    const marker = markerById.get(String(id));
+    if (!marker) return;
+
+    const pos = marker.getLatLng();
+    map.flyTo(pos, 12, { animate: true, duration: 0.6 });
+    marker.openPopup();
+  });
 </script>
 
+<!-- 이 페이지 전용 간단 스타일 -->
 <style>
   .resort-list li {
     padding: 8px 10px;
     border-radius: 8px;
     transition: background 0.2s ease;
   }
-  .resort-list li.is-hover { background: #f3f4f6; }
-  .resort-list a {
+
+  .resort-list li.is-hover {
+    background: #f3f4f6;
+  }
+
+  .resort-list a.resort-item {
     color: inherit;
     text-decoration: none;
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
+
+  .resort-thumb {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .resort-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resort-list .empty {
+    color: #9ca3af;
+    font-size: 0.9rem;
+  }
+  /* 지도 위 사진 마커 스타일 */
+  .resort-map-icon {
+    background: transparent;
+    border: none;
+  }
+
+  .resort-map-icon__inner {
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 10px 18px rgba(15, 23, 42, 0.35);
+  }
+
+  .resort-map-icon__inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
 </style>
 </body>
 </html>

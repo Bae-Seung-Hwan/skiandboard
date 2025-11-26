@@ -56,7 +56,7 @@ public class BoardController {
           authentication.getAuthorities().stream()
               .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-      // 숨김 글 + 관리자 아닌 경우 → 404
+      // 숨김 글 + 관리자 아닌 경우 404
       if (post.hidden() && !isAdmin) {
           throw new ResponseStatusException(HttpStatus.NOT_FOUND);
       }

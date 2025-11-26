@@ -27,7 +27,7 @@ weather:
 
 traffic:
   its:
-    api-key: 583e1f54f2f54c058eea74f7242cbbd5
+    api-key: 2c88d79599644d4f9c1be7f5b2d63b8b
     base-url: https://openapi.its.go.kr:9443/trafficInfo
 app:
   upload-dir: C:\upload

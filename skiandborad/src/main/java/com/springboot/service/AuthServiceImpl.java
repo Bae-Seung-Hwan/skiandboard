@@ -22,7 +22,7 @@ public class AuthServiceImpl implements AuthService {
       throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
     });
 
-    // 비밀번호 일치 확인 (컨트롤러에서도 1차 검증하지만 방어적으로 한 번 더)
+    // 비밀번호 일치 확인
     if (!req.password().equals(req.confirmPassword())) {
       throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
     }

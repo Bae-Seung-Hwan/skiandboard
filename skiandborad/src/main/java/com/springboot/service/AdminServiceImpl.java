@@ -73,7 +73,7 @@ public class AdminServiceImpl implements AdminService {
                 .getContent();
     }
 
-    // ================= 목록 페이지용 =================
+    // 목록 페이지용
 
     @Override
     public List<AdminUserDto> getAllUsers() {
@@ -85,14 +85,13 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public List<ResortDto> getAllResorts() {
-        // createdAt 정렬칼럼이 없다면 "id" 로 바꿔도 됨
         return skiResortRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))
                 .stream()
                 .map(ResortDto::from)
                 .toList();
     }
 
-    // ================= 회원 관리 CRUD =================
+    // 회원 관리 CRUD
 
     @Override
     public AdminUserEditRequest getUserForEdit(Long userId) {
@@ -131,11 +130,11 @@ public class AdminServiceImpl implements AdminService {
         if (!userRepository.existsById(userId)) {
             return;
         }
-        // TODO: 게시글/댓글 처리 정책(soft delete 등)은 나중에 정교하게
+        
         userRepository.deleteById(userId);
     }
 
-    // ================= 게시글 관리(Admin Posts) =================
+    // 게시글 관리
 
     @Override
     public List<PostListItemDto> getAllPostsForAdmin() {
@@ -170,7 +169,7 @@ public class AdminServiceImpl implements AdminService {
         boardPostRepository.deleteById(postId);
     }
 
-    // ================= 내부 헬퍼 =================
+    // 내부 헬퍼
 
     private AdminUserDto toAdminUserDto(User u) {
         return new AdminUserDto(

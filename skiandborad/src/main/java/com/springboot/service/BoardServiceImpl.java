@@ -28,7 +28,7 @@ public class BoardServiceImpl implements BoardService {
     @Value("${app.upload-dir}")
     private String uploadDir;
 
-    // ===== 목록 =====
+    // 목록
     @Override
     @Transactional(readOnly = true)
     public Page<PostListItemDto> list(BoardCategory category, String q, Pageable pageable) {
@@ -51,7 +51,7 @@ public class BoardServiceImpl implements BoardService {
         return page.map(this::toListItemDto);
     }
 
-    // ===== 현재 로그인 유저명 조회 =====
+    // 현재 로그인 유저명 조회
     private String getCurrentUsername() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
@@ -60,7 +60,7 @@ public class BoardServiceImpl implements BoardService {
         return auth.getName();
     }
 
-    // ===== 상세 =====
+    // 상세
     @Override
     @Transactional
     public PostDetailDto get(Long id, boolean increaseViewCount) {
@@ -105,14 +105,14 @@ public class BoardServiceImpl implements BoardService {
                 p.getUpdatedAt(),
                 viewCount,
                 p.isHidden(),
-                p.getAttachmentUrl(),          // ★ URL
-                p.getAttachmentOriginalName(), // ★ 원본 파일명
-                p.getAttachmentSize(),         // ★ 크기
+                p.getAttachmentUrl(),          // URL
+                p.getAttachmentOriginalName(), // 원본 파일명
+                p.getAttachmentSize(),         // 크기
                 comments
         );
     }
 
-    // ===== 파일 저장 헬퍼 =====
+    // 파일 저장 헬퍼
     private record FileInfo(String url, String originalName, Long size) {}
 
     private FileInfo saveFile(MultipartFile file) {
@@ -139,18 +139,18 @@ public class BoardServiceImpl implements BoardService {
 
             return new FileInfo(url, originalName, size);
         } catch (Exception e) {
-            e.printStackTrace(); // 필요하면 logger로 변경
+            e.printStackTrace();
             return null;
         }
     }
 
-    // ===== 생성 =====
+    // 생성
     @Override
     public Long create(String username, PostCreateRequest form, MultipartFile file) {
 
         var author = userRepo.findByUsername(username).orElse(null);
 
-        FileInfo info = saveFile(file); // ★ 파일 저장
+        FileInfo info = saveFile(file);
 
         var post = BoardPost.builder()
                 .title(form.title())
@@ -167,7 +167,7 @@ public class BoardServiceImpl implements BoardService {
         return postRepo.save(post).getId();
     }
 
-    // ===== 수정 =====
+    // 수정
     @Override
     public void update(Long id, String username, PostUpdateRequest form, MultipartFile file) {
         var post = postRepo.findById(id).orElseThrow();
@@ -190,7 +190,7 @@ public class BoardServiceImpl implements BoardService {
         }
     }
 
-    // ===== 삭제 =====
+    // 삭제
     @Override
     public void delete(Long id, String username) {
         var post = postRepo.findById(id).orElseThrow();
@@ -203,7 +203,7 @@ public class BoardServiceImpl implements BoardService {
         postRepo.delete(post);
     }
 
-    // ===== 댓글 작성 =====
+    // 댓글 작성
     @Override
     public void addComment(Long postId, String username, CommentCreateRequest form) {
         var post = postRepo.findById(postId).orElseThrow();
@@ -230,7 +230,7 @@ public class BoardServiceImpl implements BoardService {
                 .getContent();
     }
 
-    // ===== DTO 매핑 =====
+    // DTO 매핑
     private PostListItemDto toListItemDto(BoardPost p) {
         return new PostListItemDto(
                 p.getId(),

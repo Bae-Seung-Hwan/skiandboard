@@ -1,42 +1,48 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-	<head>
-	  <th:block th:replace="~{fragments/_head :: head}"></th:block>
-	  <style>
-	    /* resort.html 전용 스타일 */
-	    main { max-width:1080px; margin:0 auto; padding:24px 16px; }
-	    .hero-img{width:100%;max-height:420px;object-fit:cover;border-radius:16px;margin-bottom:24px}
-	    .resort-header h1{font-size:2rem;margin:0}
-	    .resort-header .desc{color:#555;margin-top:8px;line-height:1.7}
-	    .score-table{width:100%;border-collapse:collapse;margin-top:16px}
-	    .score-table th,.score-table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
-	    .price-box,.info-box{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:20px}
-	    .homepage-link{display:inline-block;margin-top:12px;padding:8px 12px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none}
-	  </style>
-	</head>
+  <head>
+    <th:block th:replace="~{fragments/_head :: head}"></th:block>
+    <style>
+      /* resort.html 전용 스타일 */
+      main { max-width:1080px; margin:0 auto; padding:24px 16px; }
+      .hero-img{width:100%;max-height:420px;object-fit:cover;border-radius:16px;margin-bottom:24px}
+      .resort-header h1{font-size:2rem;margin:0}
+      .resort-header .desc{color:#555;margin-top:8px;line-height:1.7}
+      .score-table{width:100%;border-collapse:collapse;margin-top:16px}
+      .score-table th,.score-table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
+      .price-box,.info-box{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:20px}
+      .homepage-link{display:inline-block;margin-top:12px;padding:8px 12px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none}
+    </style>
+  </head>
 <body>
 <header th:replace="~{fragments/_nav :: nav}"></header>
 <div class="divider"></div>
 
 <main>
-  <img class="hero-img" th:if="${resort.heroImageUrl != null}" th:src="${resort.heroImageUrl}" alt="스키장 이미지"/>
+  <!-- ✅ context path 포함되도록 @{} 써주는게 안전 -->
+  <img class="hero-img"
+       th:if="${resort.heroImageUrl != null}"
+       th:src="@{${resort.heroImageUrl}}"
+       alt="스키장 이미지"/>
 
   <section class="resort-header">
     <h1 th:text="${resort.name}">리조트명</h1>
-	<!-- 스키장 날씨 -->
-	<section class="panel" th:if="${resort != null}">
-	  <h3>스키장 날씨</h3>
-	  <div id="weather">불러오는 중...</div>
-	</section>
 
-	<!-- 정적 JS는 th:src로 (컨텍스트 패스 자동 반영) -->
-	<script th:src="@{/js/weather.js}"></script>
+    <!-- 스키장 날씨 -->
+    <section class="panel" th:if="${resort != null}">
+      <h3>스키장 날씨</h3>
+      <div id="weather">불러오는 중...</div>
+    </section>
 
-	<!-- resort.id 전달해서 호출 -->
-	<script th:inline="javascript" th:if="${resort != null}">
-	  const resortId = /*[[${resort.id}]]*/ 0;
-	  loadWeather(resortId);   // 한 개 인자만!
-	</script>
+    <!-- 날씨 JS -->
+    <script th:src="@{/js/weather.js}"></script>
+
+    <!-- resort.id 전달해서 호출 -->
+    <script th:inline="javascript" th:if="${resort != null}">
+      const resortId = /*[[${resort.id}]]*/ 0;
+      loadWeather(resortId);   // 한 개 인자만!
+    </script>
+
     <p class="desc" th:text="${resort.longDescription}">스키장 설명</p>
 
     <a th:if="${resort.homepageUrl != null}" class="homepage-link"
@@ -61,6 +67,93 @@
       <tr><td>설질</td><td th:text="${resort.snowQualityScore}">4.8</td></tr>
     </table>
   </section>
+
+  <!-- 🆕 여기부터: 최근 교통 혼잡도 / 속도 차트 -->
+  <section class="panel" th:if="${resort != null}">
+    <h3>최근 교통 혼잡도 / 속도</h3>
+    <p class="sub">최근 24시간 기준</p>
+    <canvas id="trafficChart" height="120"></canvas>
+  </section>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- 혼잡도 / 속도 차트 스크립트 -->
+  <script th:inline="javascript" th:if="${resort != null}">
+  /*<![CDATA[*/
+    // 위의 weather 스크립트에서 이미 const resortId 선언되어 있으니 그대로 사용
+    // 컨텍스트 경로(/skiandboard)를 포함한 API prefix
+    const trafficApiBase = /*[[@{/api/resorts/}]]*/ "";
+
+    // HH:mm 포맷으로 변환
+    function formatTimeLabel(isoString) {
+      const d = new Date(isoString);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    fetch(`${trafficApiBase}${resortId}/traffic-history?hours=24`)
+      .then(res => res.json())
+      .then(points => {
+        if (!points || points.length === 0) return;
+
+        const labels = points.map(p => formatTimeLabel(p.recordedAt));
+        const congestion = points.map(p => p.congestionLevel);
+        const speeds = points.map(p => p.speed); // null 그대로 두면 Chart.js가 라인 끊어서 표시
+
+        const ctx = document.getElementById("trafficChart").getContext("2d");
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "혼잡도(레벨)",
+                data: congestion,
+                yAxisID: "yLevel",
+                tension: 0.3
+              },
+              {
+                label: "평균 속도(km/h)",
+                data: speeds,
+                yAxisID: "ySpeed",
+                borderDash: [4, 4],
+                tension: 0.3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: "index", intersect: false },
+            scales: {
+              yLevel: {
+                position: "left",
+                min: 1,
+                max: 5,
+                ticks: {
+                  stepSize: 1
+                },
+                title: { display: true, text: "혼잡도 레벨" }
+              },
+              ySpeed: {
+                position: "right",
+                beginAtZero: true,
+                title: { display: true, text: "속도 (km/h)" }
+              }
+            },
+            plugins: {
+              legend: { display: true }
+            }
+          }
+        });
+      })
+      .catch(err => console.error("traffic chart error", err));
+  /*]]>*/
+  </script>
+  <!-- 🆕 차트 영역 끝 -->
+
 </main>
 
 <footer class="footer">© Ski&Board</footer>

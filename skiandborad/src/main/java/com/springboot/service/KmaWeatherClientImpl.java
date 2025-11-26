@@ -42,7 +42,7 @@ public class KmaWeatherClientImpl implements KmaWeatherClient {
         double rn1 = ncst.getOrDefault("RN1", 0.0);
         double pty = fcst.getOrDefault("PTY", 0.0);
 
-        // 적설 계산 (간단 버전)
+        // 적설 계산
         double snow = (pty == 3 ? rn1 : 0.0);
 
         String condition =
@@ -59,12 +59,12 @@ public class KmaWeatherClientImpl implements KmaWeatherClient {
     }
 
     private Map<String, Double> callNcst(String baseDate, String baseTime, int nx, int ny) {
-        // TODO: Jackson으로 파싱해야 함
+        
         throw new UnsupportedOperationException("KMA NCST JSON 파싱 구현 필요");
     }
 
     private Map<String, Double> callFcst(String baseDate, String baseTime, int nx, int ny) {
-        // TODO: Jackson으로 파싱해야 함
+        
         throw new UnsupportedOperationException("KMA FCST JSON 파싱 구현 필요");
     }
 }

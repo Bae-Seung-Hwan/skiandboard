@@ -74,7 +74,7 @@ public class MyPageServiceImpl implements MyPageService {
     user.setDisplayName(req.displayName());
   }
 
-  // ===== 매핑 헬퍼 =====
+  // 매핑 헬퍼
 
   private PostListItemDto toPostListItemDto(BoardPost p) {
     String authorName = p.getAuthor() != null

@@ -42,12 +42,7 @@ public class AdminController {
         return "admin/users";
     }
 
-    // 스키장 목록
-    @GetMapping("/resorts")
-    public String resorts(Model model) {
-        model.addAttribute("resorts", adminService.getAllResorts());
-        return "admin/resorts";
-    }
+    
     @GetMapping("/users/{id}/edit")
     public String editUser(@PathVariable("id") Long id, Model model) {
         var form = adminService.getUserForEdit(id);
@@ -83,7 +78,7 @@ public class AdminController {
         adminService.deleteUser(id);
         return "redirect:/admin/users";
     }
-
+    //게시판 관리
     @GetMapping("/posts")
     public String adminPosts(Model model) {
         model.addAttribute("posts", adminService.getAllPostsForAdmin());
@@ -100,6 +95,12 @@ public class AdminController {
     public String deletePost(@PathVariable("id") Long id) {
         adminService.deletePost(id);
         return "redirect:/admin/posts";
+    }
+    // 스키장 목록
+    @GetMapping("/resorts")
+    public String resorts(Model model) {
+        model.addAttribute("resorts", adminService.getAllResorts());
+        return "admin/resorts";
     }
 
 }

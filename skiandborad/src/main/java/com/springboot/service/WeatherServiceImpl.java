@@ -29,7 +29,7 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public WeatherDto getWeatherForResort(Long resortId) {
 
-        // 1) 리조트 조회
+        // 리조트 조회
         SkiResort resort = resortRepo.findById(resortId)
                 .orElseThrow(() -> new IllegalArgumentException("리조트를 찾을 수 없습니다. id=" + resortId));
 
@@ -37,10 +37,10 @@ public class WeatherServiceImpl implements WeatherService {
             throw new IllegalStateException("위도/경도 정보가 없는 리조트입니다. id=" + resortId);
         }
 
-        // 2) 캐시 유효기간 기준 시각 계산 (지금 - TTL분)
+        // 캐시 유효기간 기준 시각 계산 (지금 - TTL분)
         Instant cutoff = Instant.now().minus(Duration.ofMinutes(cacheTtlMinutes));
 
-        // 3) 캐시 조회 (WeatherCacheRepository에 실제로 있는 메서드 사용)
+        // 캐시 조회 (WeatherCacheRepository에 실제로 있는 메서드 사용)
         WeatherCache cache = cacheRepo
                 .findFirstByResortIdAndFetchedAtAfterOrderByFetchedAtDesc(resortId, cutoff)
                 .orElseGet(() -> {
@@ -48,21 +48,21 @@ public class WeatherServiceImpl implements WeatherService {
                     return cacheRepo.save(fresh);
                 });
 
-        // 4) 캐시(또는 방금 저장한 fresh)를 DTO로 변환
+        // 캐시(또는 방금 저장한 fresh)를 DTO로 변환
         return new WeatherDto(
                 resort.getId(),
                 resort.getName(),
                 cache.getTemperatureC(),
                 cache.getWindMs(),
                 cache.getSnowfallCm(),
-                cache.getCondition(),   // 엔티티 필드명: condition
+                cache.getCondition(),
                 cache.getFetchedAt()
         );
     }
 
-    /**
-     * 외부 제공자(KMA → 실패 시 OpenWeather)에서 날씨를 받아와 WeatherCache 엔티티를 만들어줌
-     */
+    
+     //외부 제공자(KMA 실패 시 OpenWeather)에서 날씨를 받아와 WeatherCache 엔티티를 만들어줌
+     
     private WeatherCache fetchFromProvider(SkiResort resort) {
         WeatherDto dto = tryKmaOrFallback(resort.getLat(), resort.getLng());
 
@@ -77,9 +77,9 @@ public class WeatherServiceImpl implements WeatherService {
         return cache;
     }
 
-    /**
-     * KMA 호출 → 실패하면 OpenWeather로 폴백
-     */
+    
+     //KMA 호출 실패하면 OpenWeather로 폴백
+     
     private WeatherDto tryKmaOrFallback(double lat, double lng) {
         // 1차: KMA
         try {
