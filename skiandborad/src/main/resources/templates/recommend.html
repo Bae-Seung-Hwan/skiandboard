@@ -1,22 +1,266 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/_head :: head}"></head>
+<head>
+	<th:block th:replace="~{fragments/_head :: head}"></th:block>
+  <!-- 추천 페이지 전용 스타일 -->
+  <style>
+    .recommend-page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .recommend-mast h1 {
+      font-size: 2rem;
+      margin-bottom: 4px;
+    }
+
+    .recommend-mast .sub {
+      color: #6b7280;
+      margin: 0;
+    }
+
+    /* 전체 레이아웃: 왼쪽 리스트 + 오른쪽 필터 */
+    .recommend-layout {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    /* 필터 카드 */
+    .recommend-filter-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      background: #f9fafb;
+    }
+    .recommend-filter-card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .recommend-filter-card .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+    .recommend-filter-card label {
+      color: #4b5563;
+      font-size: 0.85rem;
+    }
+    .recommend-filter-card select,
+    .recommend-filter-card input {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+    }
+    .recommend-filter-card button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .recommend-filter-card button:hover {
+      background: #1d4ed8;
+    }
+
+    /* 추천 결과 카드 그리드 */
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 12px;
+    }
+
+    .recommend-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      background: #ffffff;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+      transition: 0.2s ease;
+    }
+    .recommend-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+    }
+    .recommend-card h3 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+    }
+    .recommend-card h3 a {
+      color: #111827;
+      text-decoration: none;
+    }
+    .recommend-card h3 a:hover {
+      text-decoration: underline;
+    }
+    .recommend-score {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #2563eb;
+      margin-bottom: 6px;
+    }
+    .recommend-meta {
+      font-size: 0.85rem;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+    .recommend-tags {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .recommend-tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    /* 탭 버튼 / 패널 */
+    .tab {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    .empty {
+      font-size:0.9rem;
+      color:#9ca3af;
+    }
+    .loading, .error {
+      font-size:0.9rem;
+      color:#4b5563;
+    }
+  </style>
+</head>
 <body>
 <header th:replace="~{fragments/_nav :: nav}"></header>
 
-<main class="container" style="max-width:1120px">
-  <section class="mast">
+<main class="recommend-page">
+  <section class="mast recommend-mast">
     <h1>스키장 추천</h1>
     <p class="sub">내 위치와 조건을 바탕으로 오늘 갈만한 스키장을 찾아드려요.</p>
   </section>
 
-  <!-- 추천 위젯 (탭+필터+리스트) -->
-  <meta name="ctx" th:content="@{/}" /> <!-- _head.html에 있어도 됨 -->
-  <section th:replace="~{fragments/_recommend_tab :: recommendTab}"></section>
-  <script th:src="@{/js/recommend.js}"></script>
+  <!-- 컨텍스트 경로 (JS에서 사용) -->
+  <meta name="ctx" th:content="@{/}" />
+
+  <!-- 추천 위젯 본문 -->
+  <section class="recommend-layout recommend-widget">
+
+    <!-- 🟦 왼쪽: 탭 + 추천 결과 -->
+    <div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button type="button" class="tab active" data-tab="list">추천</button>
+        <button type="button" class="tab" data-tab="filters">필터</button>
+      </div>
+
+      <p id="recommendSummary"
+         style="font-size:0.9rem; color:#4b5563; margin:4px 0 8px;">
+        내 위치 기준으로 가까우면서 날씨/혼잡도 좋은 순으로 추천해요.
+      </p>
+
+      <!-- 리스트 탭 -->
+      <div id="rec-list" class="tab-panel active">
+        <!-- 여기 안을 recommend.js 가 채움 -->
+        <div id="rec-items" class="recommend-grid"></div>
+      </div>
+
+      <!-- 필터 탭 (왼쪽 안내용) -->
+      <div id="rec-filters" class="tab-panel" style="font-size:0.85rem; color:#6b7280;">
+        오른쪽의 <strong>검색 필터</strong>를 사용해서 조건을 조절해 보세요.
+      </div>
+    </div>
+
+    <!-- 🟩 오른쪽: 검색 필터 카드 -->
+    <aside class="recommend-filter-card">
+      <h3>검색 필터</h3>
+      <form id="rec-filter-form">
+        <div class="field-group">
+          <div>
+            <label for="rec-skill">실력</label>
+            <select id="rec-skill" name="skill">
+              <option value="BEGINNER">초급</option>
+              <option value="INTERMEDIATE">중급</option>
+              <option value="ADVANCED">상급</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="rec-gear">장비</label>
+            <select id="rec-gear" name="gear">
+              <option value="SKI">스키</option>
+              <option value="BOARD">보드</option>
+              <option value="BOTH">둘 다</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="rec-region">지역</label>
+            <select id="rec-region" name="region">
+              <option value="ANY">전체</option>
+              <option value="SEOUL">수도권</option>
+              <option value="GANGWON">강원권</option>
+              <option value="JEOLLA">전라/충청</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="rec-transport">이동 수단</label>
+            <select id="rec-transport" name="transport">
+              <option value="CAR">자가용</option>
+              <option value="BUS">대중교통</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="rec-maxdist">최대 거리 (km)</label>
+            <input id="rec-maxdist" name="maxDistanceKm"
+                   type="number" placeholder="예: 150">
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+            <input type="checkbox" id="rec-use-geo">
+            <label for="rec-use-geo">내 위치 사용</label>
+          </div>
+
+          <div id="rec-geo-status" style="font-size:0.8rem; color:#6b7280;">
+            브라우저 위치 권한을 허용하면 현재 위치 기준으로 추천해요.
+          </div>
+        </div>
+
+        <button type="button" id="rec-apply">적용하기</button>
+      </form>
+    </aside>
+  </section>
 </main>
 
-<!-- 스크립트 -->
+<!-- 스크립트: 여기서 딱 한 번만! -->
 <script th:src="@{/js/recommend.js}"></script>
 </body>
 </html>
+
