@@ -78,6 +78,7 @@ public class AdminController {
         adminService.deleteUser(id);
         return "redirect:/admin/users";
     }
+    
     //게시판 관리
     @GetMapping("/posts")
     public String adminPosts(Model model) {
@@ -96,6 +97,7 @@ public class AdminController {
         adminService.deletePost(id);
         return "redirect:/admin/posts";
     }
+    
     // 스키장 목록
     @GetMapping("/resorts")
     public String resorts(Model model) {

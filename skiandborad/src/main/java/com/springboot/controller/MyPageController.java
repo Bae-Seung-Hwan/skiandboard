@@ -18,7 +18,7 @@ public class MyPageController {
 
   private final MyPageService myPageService;
 
-  // ✅ 마이페이지 요약
+  // 마이페이지 요약
   @GetMapping
   public String index(@AuthenticationPrincipal UserPrincipal principal,
                       Model model) {
@@ -33,7 +33,7 @@ public class MyPageController {
     return "mypage/index";
   }
 
-  // ✅ 내 정보 보기 + 수정 폼
+  // 내 정보 보기 + 수정 폼
   @GetMapping("/profile")
   public String profile(@AuthenticationPrincipal UserPrincipal principal,
                         Model model) {
@@ -58,7 +58,7 @@ public class MyPageController {
     return "redirect:/mypage?updated";
   }
 
-  // ✅ 내가 쓴 글 전체
+  // 내가 쓴 글 전체
   @GetMapping("/posts")
   public String myPosts(@AuthenticationPrincipal UserPrincipal principal,
                         Model model) {
@@ -68,7 +68,7 @@ public class MyPageController {
     return "mypage/posts";
   }
 
-  // ✅ 내가 쓴 댓글 전체
+  // 내가 쓴 댓글 전체
   @GetMapping("/comments")
   public String myComments(@AuthenticationPrincipal UserPrincipal principal,
                            Model model) {

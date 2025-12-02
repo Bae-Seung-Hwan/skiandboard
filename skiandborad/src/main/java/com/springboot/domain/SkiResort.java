@@ -17,12 +17,12 @@ public class SkiResort {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; //리조트 id
 
-    private String name;
-    private String description;
-    private Double lat;
-    private Double lng;
+    private String name; //리조트 이름
+    private String description; //설명
+    private Double lat; //위도
+    private Double lng; //경도
 
     @Enumerated(EnumType.STRING)
     private ResortType type;

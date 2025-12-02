@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class RecommendPageController {
 
-    /** 추천 페이지 뷰 (templates/recommend.html) */
+    //추천 페이지 뷰 recommend.html
     @GetMapping("/recommend")
     public String page() {
         return "recommend";

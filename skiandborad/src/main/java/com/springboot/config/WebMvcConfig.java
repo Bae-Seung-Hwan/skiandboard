@@ -18,10 +18,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 실제 로컬 디렉터리 uploadDir 로 연결
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + uploadDir + "/")
-                .setCachePeriod(3600); // 선택: 1시간 캐싱
-
-        // 혹시 이미지 외의 정적 폴더 등을 추가하고 싶을 때 사용
-        // registry.addResourceHandler("/static/**")
-        //         .addResourceLocations("classpath:/static/");
+                .setCachePeriod(3600); // 1시간 캐싱
     }
 }
