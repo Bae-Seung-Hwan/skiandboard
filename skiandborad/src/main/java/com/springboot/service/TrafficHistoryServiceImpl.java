@@ -53,7 +53,7 @@ public class TrafficHistoryServiceImpl implements TrafficHistoryService {
         }
     }
 
-    // ✅ 새로 추가: 차트용 데이터 조회
+    // 차트용 데이터 조회
     @Override
     @Transactional(readOnly = true)
     public List<TrafficHistoryPointDto> getHistory(Long resortId, int hours) {

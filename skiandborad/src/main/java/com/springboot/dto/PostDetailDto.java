@@ -15,8 +15,8 @@ public record PostDetailDto(
 	    Instant updatedAt,
 	    long viewCount,
 	    boolean hidden,
-	    String attachmentUrl,          // 🔥 URL
-	    String attachmentOriginalName, // 🔥 원본 파일명
-	    Long attachmentSize,           // 🔥 크기
+	    String attachmentUrl,          // URL
+	    String attachmentOriginalName, // 원본 파일명
+	    Long attachmentSize,           // 크기
 	    List<CommentDto> comments
 	) {}
